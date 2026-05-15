@@ -2,6 +2,7 @@
   "frameCount": 8,
   "acceptedFrameCount": 8,
   "discardedDuplicateFrames": [],
+  "discardedTransientFrames": [],
   "width": 420,
   "height": 3200,
   "stickyHeaderRows": 0,

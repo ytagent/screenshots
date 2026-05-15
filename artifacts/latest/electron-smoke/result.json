@@ -1,5 +1,6 @@
 {
   "passed": true,
+  "scoreThreshold": 0.985,
   "score": 1,
   "sizeMismatch": false,
   "actual": {
@@ -14,16 +15,17 @@
     "frameCount": 19,
     "acceptedFrameCount": 10,
     "discardedDuplicateFrames": [
-      2,
-      5,
-      8,
-      11,
-      14,
+      1,
+      4,
+      7,
+      10,
+      13,
       15,
       16,
       17,
       18
     ],
+    "discardedTransientFrames": [],
     "width": 460,
     "height": 2640,
     "stickyHeaderRows": 0,
@@ -64,16 +66,6 @@
       {
         "inputIndex": 1,
         "outputY": 480,
-        "sourceY": 240,
-        "rows": 240,
-        "deltaY": 240,
-        "overlapRows": 240,
-        "confidence": 1,
-        "warnings": []
-      },
-      {
-        "inputIndex": 2,
-        "outputY": 720,
         "sourceY": 0,
         "rows": 0,
         "deltaY": 0,
@@ -83,6 +75,16 @@
         "warnings": [
           "duplicate frame discarded"
         ]
+      },
+      {
+        "inputIndex": 2,
+        "outputY": 480,
+        "sourceY": 240,
+        "rows": 240,
+        "deltaY": 240,
+        "overlapRows": 240,
+        "confidence": 1,
+        "warnings": []
       },
       {
         "inputIndex": 3,
@@ -97,16 +99,6 @@
       {
         "inputIndex": 4,
         "outputY": 960,
-        "sourceY": 240,
-        "rows": 240,
-        "deltaY": 240,
-        "overlapRows": 240,
-        "confidence": 1,
-        "warnings": []
-      },
-      {
-        "inputIndex": 5,
-        "outputY": 1200,
         "sourceY": 0,
         "rows": 0,
         "deltaY": 0,
@@ -116,6 +108,16 @@
         "warnings": [
           "duplicate frame discarded"
         ]
+      },
+      {
+        "inputIndex": 5,
+        "outputY": 960,
+        "sourceY": 240,
+        "rows": 240,
+        "deltaY": 240,
+        "overlapRows": 240,
+        "confidence": 1,
+        "warnings": []
       },
       {
         "inputIndex": 6,
@@ -130,16 +132,6 @@
       {
         "inputIndex": 7,
         "outputY": 1440,
-        "sourceY": 240,
-        "rows": 240,
-        "deltaY": 240,
-        "overlapRows": 240,
-        "confidence": 1,
-        "warnings": []
-      },
-      {
-        "inputIndex": 8,
-        "outputY": 1680,
         "sourceY": 0,
         "rows": 0,
         "deltaY": 0,
@@ -149,6 +141,16 @@
         "warnings": [
           "duplicate frame discarded"
         ]
+      },
+      {
+        "inputIndex": 8,
+        "outputY": 1440,
+        "sourceY": 240,
+        "rows": 240,
+        "deltaY": 240,
+        "overlapRows": 240,
+        "confidence": 1,
+        "warnings": []
       },
       {
         "inputIndex": 9,
@@ -163,16 +165,6 @@
       {
         "inputIndex": 10,
         "outputY": 1920,
-        "sourceY": 240,
-        "rows": 240,
-        "deltaY": 240,
-        "overlapRows": 240,
-        "confidence": 1,
-        "warnings": []
-      },
-      {
-        "inputIndex": 11,
-        "outputY": 2160,
         "sourceY": 0,
         "rows": 0,
         "deltaY": 0,
@@ -182,6 +174,16 @@
         "warnings": [
           "duplicate frame discarded"
         ]
+      },
+      {
+        "inputIndex": 11,
+        "outputY": 1920,
+        "sourceY": 240,
+        "rows": 240,
+        "deltaY": 240,
+        "overlapRows": 240,
+        "confidence": 1,
+        "warnings": []
       },
       {
         "inputIndex": 12,
@@ -196,16 +198,6 @@
       {
         "inputIndex": 13,
         "outputY": 2400,
-        "sourceY": 240,
-        "rows": 240,
-        "deltaY": 240,
-        "overlapRows": 240,
-        "confidence": 1,
-        "warnings": []
-      },
-      {
-        "inputIndex": 14,
-        "outputY": 2640,
         "sourceY": 0,
         "rows": 0,
         "deltaY": 0,
@@ -215,6 +207,16 @@
         "warnings": [
           "duplicate frame discarded"
         ]
+      },
+      {
+        "inputIndex": 14,
+        "outputY": 2400,
+        "sourceY": 240,
+        "rows": 240,
+        "deltaY": 240,
+        "overlapRows": 240,
+        "confidence": 1,
+        "warnings": []
       },
       {
         "inputIndex": 15,
@@ -311,5 +313,14 @@
     }
   ],
   "controllerShown": true,
-  "finishedWithController": true
+  "controllerProgressSnapshot": {
+    "title": "长截图采集中",
+    "meta": "已捕获 2 帧",
+    "message": "长截图采集中：已捕获 2 帧。滚动完成后按 Enter，按 Esc 取消。",
+    "warnings": ""
+  },
+  "finishedWithController": true,
+  "usedDomClickFallback": false,
+  "scrollMethods": [],
+  "scrollDiagnostics": []
 }

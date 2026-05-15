@@ -256,6 +256,7 @@ async function runInElectron() {
   let outputPlan = null;
   let failure = null;
   let controllerWindow = null;
+  let controllerProgressSnapshot = null;
   let finishedWithController = false;
   let usedDomClickFallback = false;
   const scrollStates = [];
@@ -293,6 +294,16 @@ async function runInElectron() {
     screenshots.$view.webContents,
   );
   await delay(1400);
+  if (controllerWindow && !controllerWindow.isDestroyed()) {
+    controllerProgressSnapshot = await controllerWindow.webContents.executeJavaScript(
+      `(() => ({
+        title: document.getElementById('title')?.textContent || '',
+        meta: document.getElementById('meta')?.textContent || '',
+        message: document.getElementById('message')?.textContent || '',
+        warnings: document.getElementById('warnings')?.textContent || ''
+      }))()`,
+    );
+  }
 
   for (let index = 0; index < 12; index += 1) {
     const state = await target.webContents.executeJavaScript(`(() => {
@@ -374,7 +385,9 @@ async function runInElectron() {
     passed:
       diffStats.score >= scoreThreshold &&
       !diffStats.sizeMismatch &&
-      !outputPlan?.failureReason,
+      !outputPlan?.failureReason &&
+      Boolean(controllerProgressSnapshot?.message) &&
+      Boolean(controllerProgressSnapshot?.meta),
     scoreThreshold,
     score: diffStats.score,
     sizeMismatch: diffStats.sizeMismatch,
@@ -383,6 +396,7 @@ async function runInElectron() {
     plan: outputPlan,
     scrollStates,
     controllerShown: Boolean(controllerWindow),
+    controllerProgressSnapshot,
     finishedWithController,
     usedDomClickFallback,
     scrollMethods: outputData?.longScreenshotScrollMethods,

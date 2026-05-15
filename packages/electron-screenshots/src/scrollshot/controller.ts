@@ -280,7 +280,7 @@ export function getLongScreenshotControllerBounds(
     320,
     Math.max(220, display.width - margin * 2),
   );
-  const controllerHeight = 76;
+  const controllerHeight = 104;
   if (
     controllerWidth > display.width - margin * 2 ||
     controllerHeight > display.height - margin * 2
@@ -395,6 +395,23 @@ html, body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.message {
+  color: #d1d5db;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.warnings {
+  color: #fbbf24;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.warnings:empty {
+  display: none;
+}
 button {
   width: 58px;
   height: 34px;
@@ -415,6 +432,8 @@ button:active { transform: translateY(1px); }
   <div class="status">
     <div class="title" id="title">长截图采集中</div>
     <div class="meta" id="meta">已捕获 0 帧</div>
+    <div class="message" id="message">请在选区内滚动，完成后点击完成</div>
+    <div class="warnings" id="warnings"></div>
   </div>
   <button class="finish" data-action="finish">完成</button>
   <button class="cancel" data-action="cancel">取消</button>
@@ -422,10 +441,25 @@ button:active { transform: translateY(1px); }
 <script>
 const title = document.getElementById('title');
 const meta = document.getElementById('meta');
+const message = document.getElementById('message');
+const warnings = document.getElementById('warnings');
 window.__setScrollshotProgress = (progress) => {
   const frameCount = progress.frameCount || 0;
-  title.textContent = progress.state === 'stitching' ? '长截图拼接中' : '长截图采集中';
+  const warningList = Array.isArray(progress.warnings) ? progress.warnings : [];
+  title.textContent =
+    progress.state === 'failed'
+      ? '长截图失败'
+      : progress.state === 'cancelled'
+        ? '长截图已取消'
+        : progress.state === 'stitching'
+          ? '长截图拼接中'
+          : '长截图采集中';
   meta.textContent = '已捕获 ' + frameCount + ' 帧';
+  message.textContent = progress.message || '请在选区内滚动，完成后点击完成';
+  warnings.textContent =
+    warningList.length > 0
+      ? '警告：' + warningList[warningList.length - 1]
+      : '';
 };
 document.querySelector('[data-action="finish"]').addEventListener('click', () => {
   if (window.scrollshotController) {
