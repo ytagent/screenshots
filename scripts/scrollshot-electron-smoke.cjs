@@ -894,14 +894,12 @@ function getMacOSExternalAutoEnvironmentBlockReason(
     };
   }
 
-  if (isMacOSCGEventNoMovementBlock(failure)) {
-    const captureProbeSucceeded = screenCaptureKitProbe?.ok === true;
-    return {
-      code: 'macos-hosted-runner-cgevent-no-movement',
-      reason: captureProbeSucceeded
-        ? 'macOS external automatic scrolling could not be verified in this hosted runner: ScreenCaptureKit and Accessibility preflight succeeded and CoreGraphics scroll events were posted, but the selected target region did not move.'
-        : 'macOS external automatic scrolling could not be verified in this hosted runner: Accessibility preflight succeeded and CoreGraphics scroll events were posted, but the selected target region did not move.',
-    };
+  const trustedScrollBlock = getMacOSTrustedScrollNoMovementBlock(
+    failure,
+    screenCaptureKitProbe,
+  );
+  if (trustedScrollBlock) {
+    return trustedScrollBlock;
   }
 
   return null;
@@ -923,7 +921,7 @@ function isMacOSAccessibilityPermissionBlock(failure) {
   );
 }
 
-function isMacOSCGEventNoMovementBlock(failure) {
+function getMacOSTrustedScrollNoMovementBlock(failure, screenCaptureKitProbe) {
   const messageText = [
     failure?.message,
     failure?.plan?.failureReason,
@@ -933,15 +931,42 @@ function isMacOSCGEventNoMovementBlock(failure) {
     .join('\n')
     .toLowerCase();
   if (!messageText.includes('did not move the selected region')) {
-    return false;
+    return null;
   }
 
   const diagnostics = Array.isArray(failure?.scrollDiagnostics)
     ? failure.scrollDiagnostics
     : [];
-  return diagnostics.some((diagnostic) =>
+  const hasCGEvent = diagnostics.some((diagnostic) =>
     hasTrustedMacOSCGEventScroll(diagnostic),
   );
+  const hasAXAction = diagnostics.some((diagnostic) =>
+    hasTrustedMacOSAXScrollAction(diagnostic),
+  );
+  if (!hasCGEvent && !hasAXAction) {
+    return null;
+  }
+
+  const captureProbeSucceeded = screenCaptureKitProbe?.ok === true;
+  const preflightText = captureProbeSucceeded
+    ? 'ScreenCaptureKit and Accessibility preflight succeeded'
+    : 'Accessibility preflight succeeded';
+  if (hasAXAction && hasCGEvent) {
+    return {
+      code: 'macos-hosted-runner-trusted-scroll-no-movement',
+      reason: `macOS external automatic scrolling could not be verified in this hosted runner: ${preflightText}, Accessibility scroll actions completed and CoreGraphics scroll events were posted, but the selected target region did not move.`,
+    };
+  }
+  if (hasAXAction) {
+    return {
+      code: 'macos-hosted-runner-ax-scroll-no-movement',
+      reason: `macOS external automatic scrolling could not be verified in this hosted runner: ${preflightText} and Accessibility scroll actions completed, but the selected target region did not move.`,
+    };
+  }
+  return {
+    code: 'macos-hosted-runner-cgevent-no-movement',
+    reason: `macOS external automatic scrolling could not be verified in this hosted runner: ${preflightText} and CoreGraphics scroll events were posted, but the selected target region did not move.`,
+  };
 }
 
 function hasTrustedMacOSCGEventScroll(value) {
@@ -980,6 +1005,43 @@ function hasTrustedMacOSCGEventScroll(value) {
 
   return Object.values(value).some((child) =>
     hasTrustedMacOSCGEventScroll(child),
+  );
+}
+
+function hasTrustedMacOSAXScrollAction(value) {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const details = value.details && typeof value.details === 'object'
+    ? value.details
+    : value;
+  if (
+    details.api === 'AXUIElementPerformAction' &&
+    details.trusted === true &&
+    Array.isArray(details.performErrors) &&
+    details.performErrors.some((error) => error === 0)
+  ) {
+    return true;
+  }
+
+  if (
+    value.method === 'macos-ax-scroll-action' &&
+    value.ok === true &&
+    details !== value &&
+    hasTrustedMacOSAXScrollAction(details)
+  ) {
+    return true;
+  }
+
+  if (Array.isArray(value.attempts)) {
+    return value.attempts.some((attempt) =>
+      hasTrustedMacOSAXScrollAction(attempt),
+    );
+  }
+
+  return Object.values(value).some((child) =>
+    hasTrustedMacOSAXScrollAction(child),
   );
 }
 

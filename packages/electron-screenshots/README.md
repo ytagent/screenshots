@@ -164,6 +164,8 @@ export interface ScreenshotsOpts {
 }
 ```
 
+macOS 自动滚动默认先尝试 Accessibility action，再回退到 CoreGraphics `CGEvent`。开发者调试时可以设置 `ELECTRON_SCREENSHOTS_MACOS_SCROLL_STRATEGY=accessibility-action` 或 `ELECTRON_SCREENSHOTS_MACOS_SCROLL_STRATEGY=cgevent` 强制单一路径。
+
 | 名称                                              | 说明             | 返回值 |
 | ------------------------------------------------- | ---------------- | ------ |
 | `constructor(opts: ScreenshotsOpts): Screenshots` | 调用截图方法截图 | -      |

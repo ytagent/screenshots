@@ -30,11 +30,11 @@
 - `electron-screenshots`
   - Existing screenshot overlay and display capture.
   - Region-based manual scrollshot capture from the selected bounds.
-  - External automatic wheel scrolling adapter boundary for OS-level targets.
+  - External automatic scrolling adapter boundary for OS-level targets.
   - Electron controlled-content capture and scroll adapter for pages owned by the app.
   - NativeImage conversion and platform adapter implementations/scaffolding.
   - Windows `WindowsScrollAdapter` tries UI Automation `ScrollPattern` first, records target diagnostics, then falls back to the verified wheel input path.
-  - macOS CoreGraphics `CGEvent` scroll adapter is isolated and performs an `AXIsProcessTrusted` preflight before attempting external automatic scrolling.
+  - macOS external scroll adapter is isolated and performs an `AXIsProcessTrusted` preflight before attempting Accessibility action scrolling or CoreGraphics `CGEvent` scrolling.
 
 - `react-screenshots`
   - Toolbar entry point.
@@ -55,13 +55,15 @@ This path is intentionally conservative: a low-confidence stitch produces `longS
 
 The product path also supports external automatic mode:
 
-- `longScreenshotMode: "auto"`: try platform wheel scrolling first, then fall back to manual capture if the target cannot be moved.
+- `longScreenshotMode: "auto"`: try platform scrolling first, then fall back to manual capture if the target cannot be moved.
 - `longScreenshotMode: "manual"`: keep the manual-assisted behavior only.
-- `longScreenshotMode: "automatic"`: require platform wheel scrolling and fail with a clear reason if it is unavailable.
+- `longScreenshotMode: "automatic"`: require platform scrolling and fail with a clear reason if it is unavailable.
 
-The external automatic path captures the selected region, sends OS-level wheel input at the region center, waits for content to settle, and stops after repeated visually stable frames. This avoids needing target-specific DOM access and keeps the stitching path shared.
+The external automatic path captures the selected region, sends OS-level scroll input at the region center, waits for content to settle, and stops after repeated visually stable frames. This avoids needing target-specific DOM access and keeps the stitching path shared.
 
-Automatic runs expose `data.longScreenshotScrollMethods` and `data.longScreenshotScrollDiagnostics` on success. Failure events receive the same `ScreenshotsData` object with recent scroll diagnostics, so artifacts can show the selected point, display scale, adapter attempts, Windows UI Automation target metadata, wheel fallback details, and macOS Accessibility preflight results.
+Automatic runs expose `data.longScreenshotScrollMethods` and `data.longScreenshotScrollDiagnostics` on success. Failure events receive the same `ScreenshotsData` object with recent scroll diagnostics, so artifacts can show the selected point, display scale, adapter attempts, Windows UI Automation target metadata, wheel fallback details, macOS Accessibility target/action metadata, and CoreGraphics event details.
+
+On macOS, developers can compare platform strategies with `ELECTRON_SCREENSHOTS_MACOS_SCROLL_STRATEGY=accessibility-action` or `ELECTRON_SCREENSHOTS_MACOS_SCROLL_STRATEGY=cgevent`. The default `auto` strategy tries the Accessibility action path first and falls back to CoreGraphics events when the selected target does not expose an AX scroll action.
 
 The implemented automatic path is for controlled Electron content:
 
@@ -111,7 +113,7 @@ Fixtures currently include:
 
 Windows is verified in CI for the deterministic core eval, the real Electron toolbar/manual flow, the controlled Electron automatic flow, and the external automatic OS-level flow. The Windows adapter attempts UI Automation `ScrollPattern` first and falls back to wheel input when the selected target does not expose a scroll pattern. The external-auto artifact records the selected screen point, display scale, inspected UI Automation ancestors, the selected target, and the final scroll methods used.
 
-macOS is verified in CI for the deterministic core eval, the real Electron toolbar/manual flow, and the controlled Electron automatic flow. The external-auto smoke runs a ScreenCaptureKit `SCShareableContent` probe and attempts the product external-auto flow. In the current hosted macOS runner, the artifact shows ScreenCaptureKit succeeds, `AXIsProcessTrusted` is `true`, and CoreGraphics `CGEventCreateScrollWheelEvent` events are posted at the selected region center, but the selected target region still does not move. That is recorded as `environmentBlock: "macos-hosted-runner-cgevent-no-movement"` instead of a fake pass. OS-level external-window automatic scrolling is still not claimed as complete until a real signed/permissioned macOS desktop environment verifies the full stitched output.
+macOS is verified in CI for the deterministic core eval, the real Electron toolbar/manual flow, and the controlled Electron automatic flow. The external-auto smoke runs a ScreenCaptureKit `SCShareableContent` probe and attempts the product external-auto flow. In the current hosted macOS runner, the artifact shows ScreenCaptureKit succeeds, `AXIsProcessTrusted` is `true`, and trusted scroll attempts are accepted, but the selected target region still does not move. That is recorded as an explicit `macos-hosted-runner-*-no-movement` environment block instead of a fake pass. OS-level external-window automatic scrolling is still not claimed as complete until a real signed/permissioned macOS desktop environment verifies the full stitched output.
 
 Reference docs used while designing the adapters:
 
@@ -121,11 +123,13 @@ Reference docs used while designing the adapters:
 - Microsoft UI Automation `ScrollPattern.Scroll`: https://learn.microsoft.com/en-us/dotnet/api/system.windows.automation.scrollpattern.scroll
 - Apple ScreenCaptureKit: https://developer.apple.com/documentation/screencapturekit
 - Apple `AXIsProcessTrustedWithOptions`: https://developer.apple.com/documentation/applicationservices/1459186-axisprocesstrustedwithoptions
+- Apple `AXUIElementCopyElementAtPosition`: https://developer.apple.com/documentation/applicationservices/1462077-axuielementcopyelementatposition
+- Apple `AXUIElementPerformAction`: https://developer.apple.com/documentation/applicationservices/1462085-axuielementperformaction
 
 ## Known Gaps
 
 - Automatic OS-level external-window scrolling remains platform-dependent: the Windows path is verified, while macOS and Linux still have runtime permission/tooling gaps.
 - Windows UI Automation `ScrollPattern` may not be available for every selected target; the verified fallback is wheel input at the selected region center, and diagnostics are emitted for both attempts.
-- macOS ScreenCaptureKit probing, Accessibility preflight, and CoreGraphics scroll posting are implemented, but full external automatic scrolling remains unverified because the current hosted runner accepts the events without moving the target region.
+- macOS ScreenCaptureKit probing, Accessibility preflight, Accessibility action scrolling, and CoreGraphics scroll posting are implemented, but full external automatic scrolling remains unverified because the current hosted runner accepts trusted scroll attempts without moving the target region.
 - Linux external automatic mode requires `xdotool`; CI records this path as skipped unless that runtime is available.
 - Tray icon support is still optional future UX for environments where an app menu is not reachable during full-screen capture.
