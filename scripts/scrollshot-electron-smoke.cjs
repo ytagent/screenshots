@@ -128,6 +128,11 @@ async function launchSelfInElectron() {
 async function runInElectron() {
   const electron = require('electron');
   const { app, BrowserWindow, nativeImage, screen } = electron;
+  const hardTimeout = setTimeout(() => {
+    console.error('Electron scrollshot smoke timed out');
+    app.exit(1);
+  }, 90000);
+
   const Screenshots = require(join(
     rootDir,
     'packages',
@@ -280,6 +285,7 @@ async function runInElectron() {
   await screenshots.endCapture();
   target.destroy();
   app.quit();
+  clearTimeout(hardTimeout);
 
   if (!result.passed) {
     throw new Error(`Electron smoke quality gate failed: ${JSON.stringify(result)}`);

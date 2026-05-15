@@ -47,10 +47,12 @@ jobs:
 
       - name: Run Electron scrollshot smoke (Linux)
         if: runner.os == 'Linux'
+        timeout-minutes: 3
         run: xvfb-run -a pnpm smoke:scrollshot
 
       - name: Run Electron scrollshot smoke (Windows/macOS)
         if: runner.os != 'Linux'
+        timeout-minutes: 3
         run: pnpm smoke:scrollshot
 
       - name: Upload scrollshot artifacts

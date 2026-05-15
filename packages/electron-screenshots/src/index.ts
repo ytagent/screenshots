@@ -28,6 +28,29 @@ import {
 export type LoggerFn = (...args: unknown[]) => void;
 export type Logger = Debugger | LoggerFn;
 
+function withTimeout<T>(
+  task: Promise<T>,
+  timeoutMs: number,
+  message: string,
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(message));
+    }, timeoutMs);
+
+    task.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
 export interface Lang {
   magnifier_position_label?: string;
   operation_ok_title?: string;
@@ -295,18 +318,26 @@ export default class Screenshots extends Events {
         throw new Error(`Monitor.fromDisplay(${display.id}) get null`);
       }
 
-      const image = await monitor.captureImage();
+      const image = await withTimeout(
+        monitor.captureImage(),
+        4000,
+        'node-screenshots capture timed out',
+      );
       const buffer = await image.toPng(true);
       return nativeImage.createFromBuffer(buffer);
     } catch (err) {
       this.logger('SCREENSHOTS:capture Monitor capture() error %o', err);
-      const sources = await desktopCapturer.getSources({
-        types: ['screen'],
-        thumbnailSize: {
-          width: display.width * display.scaleFactor,
-          height: display.height * display.scaleFactor,
-        },
-      });
+      const sources = await withTimeout(
+        desktopCapturer.getSources({
+          types: ['screen'],
+          thumbnailSize: {
+            width: display.width * display.scaleFactor,
+            height: display.height * display.scaleFactor,
+          },
+        }),
+        4000,
+        'desktopCapturer capture timed out',
+      );
 
       let source: DesktopCapturerSource | undefined;
       // Linux系统上，screen.getDisplayNearestPoint 返回的 Display 对象的 id
