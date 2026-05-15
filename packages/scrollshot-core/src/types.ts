@@ -29,6 +29,8 @@ export interface OverlapOptions {
   minScrollDelta?: number;
   maxScrollDelta?: number;
   ignoreTopRows?: number;
+  ignoreLeftColumns?: number;
+  ignoreRightColumns?: number;
   sampleColumns?: number;
   sampleRows?: number;
 }
@@ -46,6 +48,7 @@ export interface StitchOptions extends OverlapOptions {
   stickyHeaderRows?: number | "auto";
   duplicateDeltaThreshold?: number;
   duplicateConfidenceThreshold?: number;
+  duplicateFrameScoreThreshold?: number;
   minConfidence?: number;
 }
 

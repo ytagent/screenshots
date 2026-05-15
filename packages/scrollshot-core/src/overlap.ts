@@ -18,6 +18,20 @@ function buildSamples(length: number, requested: number): number[] {
   );
 }
 
+function buildColumnSamples(
+  width: number,
+  requested: number,
+  ignoreLeftColumns: number,
+  ignoreRightColumns: number,
+): number[] {
+  const start = Math.max(0, Math.min(width - 1, Math.floor(ignoreLeftColumns)));
+  const end = Math.max(
+    start + 1,
+    Math.min(width, Math.floor(width - ignoreRightColumns)),
+  );
+  return buildSamples(end - start, requested).map((x) => x + start);
+}
+
 function channelError(
   previous: PixelImage,
   next: PixelImage,
@@ -49,6 +63,8 @@ function scoreDelta(
   next: PixelImage,
   deltaY: number,
   ignoreTopRows: number,
+  ignoreLeftColumns: number,
+  ignoreRightColumns: number,
   sampleColumns: number,
   sampleRows: number,
 ): { score: number; overlapRows: number } {
@@ -57,7 +73,12 @@ function scoreDelta(
     return { score: Number.POSITIVE_INFINITY, overlapRows: 0 };
   }
 
-  const columns = buildSamples(previous.width, sampleColumns);
+  const columns = buildColumnSamples(
+    previous.width,
+    sampleColumns,
+    ignoreLeftColumns,
+    ignoreRightColumns,
+  );
   const rowSamples = buildSamples(overlapRows, sampleRows);
   let error = 0;
 
@@ -141,6 +162,14 @@ export function estimateVerticalOverlap(
     minScrollDelta: options.minScrollDelta ?? 0,
     maxScrollDelta: options.maxScrollDelta,
     ignoreTopRows: Math.max(0, Math.floor(options.ignoreTopRows ?? 0)),
+    ignoreLeftColumns: Math.max(0, Math.floor(options.ignoreLeftColumns ?? 2)),
+    ignoreRightColumns: Math.max(
+      0,
+      Math.floor(
+        options.ignoreRightColumns ??
+          Math.min(28, Math.max(8, previous.width * 0.06)),
+      ),
+    ),
     strategy,
   };
 
@@ -165,6 +194,8 @@ export function estimateVerticalOverlap(
       next,
       deltaY,
       normalizedOptions.ignoreTopRows,
+      normalizedOptions.ignoreLeftColumns,
+      normalizedOptions.ignoreRightColumns,
       sampleColumns,
       sampleRows,
     );

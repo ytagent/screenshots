@@ -441,7 +441,7 @@ export default class Screenshots extends Events {
           minOverlapRatio: 0.16,
           maxOverlapRatio: 0.96,
           minScrollDelta: 3,
-          minConfidence: 0.93,
+          minConfidence: 0.68,
           sampleColumns: 64,
           sampleRows: 220,
         });
@@ -542,6 +542,7 @@ export default class Screenshots extends Events {
 
     await new Promise<void>((resolve) => setTimeout(resolve, 900));
     this.$win?.hide();
+    await new Promise<void>((resolve) => setTimeout(resolve, 180));
     await captureFrame();
     frameTimer = setInterval(() => {
       captureFrame();

@@ -46,6 +46,70 @@ function validateFrames(frames: ScrollshotFrame[]): void {
   }
 }
 
+function buildSamples(length: number, requested: number): number[] {
+  const count = Math.max(1, Math.min(length, Math.floor(requested)));
+  if (count === length) {
+    return Array.from({ length }, (_, index) => index);
+  }
+  if (count === 1) {
+    return [Math.floor(length / 2)];
+  }
+  return Array.from({ length: count }, (_, index) =>
+    Math.min(length - 1, Math.round((index * (length - 1)) / (count - 1))),
+  );
+}
+
+function normalizedSameFrameScore(
+  previous: ScrollshotFrame,
+  next: ScrollshotFrame,
+  options: StitchOptions,
+  ignoreTopRows: number,
+): number {
+  const width = previous.image.width;
+  const height = previous.image.height;
+  const startX = Math.max(0, Math.floor(options.ignoreLeftColumns ?? 2));
+  const endX = Math.max(
+    startX + 1,
+    Math.min(
+      width,
+      Math.floor(
+        width -
+          (options.ignoreRightColumns ??
+            Math.min(28, Math.max(8, width * 0.06))),
+      ),
+    ),
+  );
+  const sampleColumns = options.sampleColumns ?? 48;
+  const sampleRows = options.sampleRows ?? 180;
+  const contentRows = Math.max(1, height - ignoreTopRows);
+  const columns = buildSamples(endX - startX, sampleColumns).map(
+    (x) => x + startX,
+  );
+  const rows = buildSamples(contentRows, sampleRows).map((y) => y + ignoreTopRows);
+  let error = 0;
+
+  for (const y of rows) {
+    for (const x of columns) {
+      const previousOffset = (y * width + x) * 4;
+      const nextOffset = (y * width + x) * 4;
+      error += Math.abs(
+        (previous.image.data[previousOffset] ?? 0) -
+          (next.image.data[nextOffset] ?? 0),
+      );
+      error += Math.abs(
+        (previous.image.data[previousOffset + 1] ?? 0) -
+          (next.image.data[nextOffset + 1] ?? 0),
+      );
+      error += Math.abs(
+        (previous.image.data[previousOffset + 2] ?? 0) -
+          (next.image.data[nextOffset + 2] ?? 0),
+      );
+    }
+  }
+
+  return error / (rows.length * columns.length * 3 * 255);
+}
+
 export function stitchFrames(
   frames: ScrollshotFrame[],
   options: StitchOptions = {},
@@ -64,6 +128,8 @@ export function stitchFrames(
   const duplicateDeltaThreshold = options.duplicateDeltaThreshold ?? 2;
   const duplicateConfidenceThreshold =
     options.duplicateConfidenceThreshold ?? 0.985;
+  const duplicateFrameScoreThreshold =
+    options.duplicateFrameScoreThreshold ?? 0.002;
   const minConfidence = options.minConfidence ?? 0.92;
 
   const planFrames: StitchPlanFrame[] = [
@@ -88,6 +154,28 @@ export function stitchFrames(
   for (let index = 1; index < frames.length; index += 1) {
     const frame = frames[index];
     if (!frame) {
+      continue;
+    }
+
+    const sameFrameScore = normalizedSameFrameScore(
+      lastAccepted,
+      frame,
+      options,
+      stickyHeaderRows,
+    );
+    if (sameFrameScore <= duplicateFrameScoreThreshold) {
+      discardedDuplicateFrames.push(index);
+      planFrames.push({
+        inputIndex: index,
+        outputY: outputHeight,
+        sourceY: 0,
+        rows: 0,
+        deltaY: 0,
+        overlapRows: frame.image.height - stickyHeaderRows,
+        confidence: 1,
+        discardedDuplicate: true,
+        warnings: ["duplicate frame discarded"],
+      });
       continue;
     }
 
