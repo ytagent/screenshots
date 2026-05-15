@@ -314,6 +314,10 @@ export class MacOSScrollAdapter implements ScrollshotScrollAdapter {
     const point = getCenterScreenPoint(bounds, display);
     const scrollPixels =
       deltaY >= 0 ? -Math.round(Math.abs(deltaY)) : Math.round(Math.abs(deltaY));
+    const scrollLines =
+      deltaY >= 0
+        ? -Math.max(1, Math.min(8, Math.round(Math.abs(deltaY) / 120)))
+        : Math.max(1, Math.min(8, Math.round(Math.abs(deltaY) / 120)));
     const accessibility = await inspectMacOSAccessibilityPermission();
     if (!accessibility.trusted) {
       return withScrollDiagnostics(
@@ -352,18 +356,31 @@ if (!trusted) {
 }
 const point = $.CGPointMake(${point.x}, ${point.y});
 $.CGWarpMouseCursorPosition(point);
+const moveEvent = $.CGEventCreateMouseEvent(null, 5, point, 0);
+if (moveEvent) {
+  $.CGEventPost(0, moveEvent);
+}
 const event = $.CGEventCreateScrollWheelEvent(null, 0, 1, ${scrollPixels});
 if (!event) {
   throw new Error('CGEventCreateScrollWheelEvent returned null.');
 }
+$.CGEventSetLocation(event, point);
 $.CGEventPost(0, event);
-console.log(JSON.stringify({
+const lineEvent = $.CGEventCreateScrollWheelEvent(null, 1, 1, ${scrollLines});
+if (lineEvent) {
+  $.CGEventSetLocation(lineEvent, point);
+  $.CGEventPost(0, lineEvent);
+}
+JSON.stringify({
   trusted,
   api: 'CGEventCreateScrollWheelEvent',
   point: { x: ${point.x}, y: ${point.y} },
   scrollPixels: ${scrollPixels},
-  scrollUnit: 'pixel'
-}));
+  scrollLines: ${scrollLines},
+  scrollUnits: ['pixel', 'line'],
+  postedMouseMoved: Boolean(moveEvent),
+  postedLineEvent: Boolean(lineEvent)
+});
 `;
       const output = await runCommandDetailed(
         '/usr/bin/osascript',
@@ -408,6 +425,7 @@ console.log(JSON.stringify({
             diagnostics: {
               accessibility,
               scrollPixels,
+              scrollLines,
               ...parseCommandJson(commandFailure?.stdout),
               stdout: commandFailure?.stdout,
               stderr: commandFailure?.stderr,
@@ -427,6 +445,7 @@ console.log(JSON.stringify({
                 diagnostics: {
                   accessibility,
                   scrollPixels,
+                  scrollLines,
                   ...parseCommandJson(commandFailure?.stdout),
                   stdout: commandFailure?.stdout,
                   stderr: commandFailure?.stderr,
