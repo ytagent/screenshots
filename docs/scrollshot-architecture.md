@@ -8,9 +8,10 @@
 4. Clicking it starts scrollshot mode for that selected region.
 5. The overlay briefly shows instructions, then hides so the underlying app can receive scroll input.
 6. A small controller is shown outside the selected region when there is safe screen space.
-7. The app samples the selected display region repeatedly.
-8. The user scrolls the target content, clicks Finish, presses Enter, clicks Cancel, or presses Esc.
-9. The main process stitches captured frames and copies the final PNG to the clipboard through the existing `ok` path. Low-confidence results fail instead of being copied.
+7. In `auto` mode, the app first tries platform external wheel scrolling at the center of the selected region. If that cannot move the target, it falls back to manual-assisted capture. Developers can force `manual` or `automatic` with `longScreenshotMode`.
+8. The app samples the selected display region repeatedly.
+9. The user can manually scroll the target content, click Finish, press Enter, click Cancel, or press Esc.
+10. The main process stitches captured frames and copies the final PNG to the clipboard through the existing `ok` path. Low-confidence results fail instead of being copied.
 
 ## Package Boundaries
 
@@ -29,9 +30,11 @@
 - `electron-screenshots`
   - Existing screenshot overlay and display capture.
   - Region-based manual scrollshot capture from the selected bounds.
+  - External automatic wheel scrolling adapter boundary for OS-level targets.
   - Electron controlled-content capture and scroll adapter for pages owned by the app.
-  - NativeImage conversion and platform adapter scaffolding.
-  - Windows/macOS external scroll adapters remain isolated stubs until they can be verified on those OSes.
+  - NativeImage conversion and platform adapter implementations/scaffolding.
+  - Windows external wheel fallback implemented behind `WindowsScrollAdapter`; UI Automation `ScrollPattern` remains the next higher-confidence Windows adapter.
+  - macOS Accessibility wheel adapter is isolated but treated as permission-blocked until verified on a macOS runner with Accessibility privileges.
 
 - `react-screenshots`
   - Toolbar entry point.
@@ -49,6 +52,14 @@ The implemented user-facing product path is manual-assisted external region capt
 - output: stitched PNG sent through the existing `ok` event and copied to clipboard unless the stitch plan reports warnings.
 
 This path is intentionally conservative: a low-confidence stitch produces `longScreenshotFailed` instead of a corrupted image. If a selected region leaves no safe space for the controller, the controller is skipped so it cannot pollute the capture, and the Enter/Esc fallback remains active.
+
+The product path also supports external automatic mode:
+
+- `longScreenshotMode: "auto"`: try platform wheel scrolling first, then fall back to manual capture if the target cannot be moved.
+- `longScreenshotMode: "manual"`: keep the manual-assisted behavior only.
+- `longScreenshotMode: "automatic"`: require platform wheel scrolling and fail with a clear reason if it is unavailable.
+
+The external automatic path captures the selected region, sends OS-level wheel input at the region center, waits for content to settle, and stops after repeated visually stable frames. This avoids needing target-specific DOM access and keeps the stitching path shared.
 
 The implemented automatic path is for controlled Electron content:
 
@@ -79,6 +90,7 @@ Artifacts are written to `artifacts/latest/`:
 - `stitch-plan.json`
 - per-fixture `frames/` and `log.json`
 - `electron-smoke/` for real toolbar/manual desktop flow evidence
+- `electron-external-auto-smoke/` for OS-level external automatic flow evidence where supported
 - `electron-auto-smoke/` for controlled Electron automatic flow evidence
 
 Fixtures currently include:
@@ -95,9 +107,9 @@ Fixtures currently include:
 
 ## Platform Notes
 
-Windows is verified in CI for the deterministic core eval, the real Electron toolbar/manual flow, and the controlled Electron automatic flow. External-window automatic scrolling is still scaffolded. The next implementation step is a Windows scroll adapter that tries UI Automation `ScrollPattern` first, then a wheel fallback.
+Windows is verified in CI for the deterministic core eval, the real Electron toolbar/manual flow, the controlled Electron automatic flow, and the external automatic wheel fallback flow. The next Windows improvement is a UI Automation `ScrollPattern` adapter before falling back to wheel input.
 
-macOS is verified in CI for the deterministic core eval, the real Electron toolbar/manual flow, and the controlled Electron automatic flow. OS-level external-window automatic scrolling is not claimed as complete. Future macOS work must implement and verify ScreenCaptureKit capture and Accessibility scrolling after permissions are available on real macOS.
+macOS is verified in CI for the deterministic core eval, the real Electron toolbar/manual flow, and the controlled Electron automatic flow. OS-level external-window automatic scrolling is not claimed as complete because Accessibility scrolling requires runtime permission that the current CI runner does not grant to this app. Future macOS work must implement and verify ScreenCaptureKit capture and Accessibility scrolling after permissions are available on real macOS.
 
 Reference docs used while designing the adapters:
 
@@ -110,7 +122,7 @@ Reference docs used while designing the adapters:
 ## Known Gaps
 
 - Automatic OS-level external-window scrolling is scaffolded, not complete.
-- Windows UI Automation / SendInput scrolling is not implemented.
-- macOS ScreenCaptureKit / Accessibility scrolling is not implemented.
+- Windows UI Automation `ScrollPattern` target scrolling is not implemented; Windows currently uses the wheel fallback.
+- macOS ScreenCaptureKit capture and verified Accessibility scrolling are not implemented.
+- Linux external automatic mode requires `xdotool`; CI records this path as skipped unless that runtime is available.
 - Full-screen or near-full-screen selections may not have room for the non-captured controller; those sessions use the keyboard fallback.
-- The real desktop smoke tests drive an Electron fixture window, but they do not drive OS-level external-window automatic scrolling.

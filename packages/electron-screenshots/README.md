@@ -142,7 +142,10 @@ export interface Lang {
   operation_arrow_title?: string;
   operation_ellipse_title?: string;
   operation_rectangle_title?: string;
+  operation_long_screenshot_title?: string;
 }
+
+export type LongScreenshotMode = "auto" | "manual" | "automatic";
 
 export interface ScreenshotsOpts {
   lang?: Lang;
@@ -153,6 +156,11 @@ export interface ScreenshotsOpts {
   // 如果设置为 true 则会在第一次调用截图窗口时创建，后续调用时直接使用
   // 且由于窗口不会 close，所以不会触发 app 的 `window-all-closed` 事件
   singleWindow?: boolean;
+  // 长截图模式，默认值为 auto
+  // auto: 优先尝试平台自动滚动，失败后回退到手动滚动
+  // manual: 仅手动辅助滚动
+  // automatic: 必须自动滚动，失败时返回明确失败原因
+  longScreenshotMode?: LongScreenshotMode;
 }
 ```
 
@@ -186,6 +194,7 @@ export interface Display {
 export interface ScreenshotsData {
   bounds: Bounds;
   display: Display;
+  longScreenshot?: boolean;
 }
 
 class Event {
@@ -203,6 +212,8 @@ class Event {
 | cancel        | 截图取消事件                                                | `(event: Event) => void`                                                          |
 | save          | 截图保存事件                                                | `(event: Event, buffer: Buffer, data: ScreenshotsData) => void`                   |
 | afterSave     | 截图保存（取消保存）后的事件                                | `(event: Event, buffer: Buffer, data: ScreenshotsData, isSaved: boolean) => void` |
+| longScreenshot | 长截图完成事件                                             | `(event: Event, buffer: Buffer, data: ScreenshotsData, plan: StitchPlan) => void` |
+| longScreenshotFailed | 长截图失败事件                                      | `(event: Event, data: ScreenshotsData, message: string, warnings: string[], plan?: StitchPlan) => void` |
 | windowCreated | 截图窗口被创建后触发                                        | `($win: BrowserWindow) => void`                                                   |
 | windowClosed  | 截图窗口被关闭后触发，对`BrowserWindow` `closed` 事件的转发 | `($win: BrowserWindow) => void`                                                   |
 

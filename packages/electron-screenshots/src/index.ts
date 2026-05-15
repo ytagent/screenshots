@@ -14,7 +14,12 @@ import {
   screen,
 } from 'electron';
 import fs from 'fs-extra';
-import { stitchFrames, type ScrollshotFrame } from 'scrollshot-core';
+import {
+  compareImages,
+  type PixelImage,
+  stitchFrames,
+  type ScrollshotFrame,
+} from 'scrollshot-core';
 import Event from './event.js';
 import getDisplay, { type Display } from './getDisplay.js';
 import padStart from './padStart.js';
@@ -24,6 +29,7 @@ import {
   type LongScreenshotControllerHandle,
   type LongScreenshotProgress,
 } from './scrollshot/controller.js';
+import { createPlatformScrollAdapter } from './scrollshot/adapters.js';
 import {
   cropNativeImageByDipBounds,
   nativeImageToPixelImage,
@@ -76,9 +82,28 @@ export interface ScreenshotsOpts {
   lang?: Lang;
   logger?: Logger;
   singleWindow?: boolean;
+  longScreenshotMode?: LongScreenshotMode;
 }
 
 export type { Bounds };
+
+export type LongScreenshotMode = 'auto' | 'manual' | 'automatic';
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function areFramesVisuallyStable(
+  previous: PixelImage | undefined,
+  current: PixelImage | undefined,
+): boolean {
+  if (!previous || !current) {
+    return false;
+  }
+  return compareImages(previous, current).score >= 0.9998;
+}
 
 export default class Screenshots extends Events {
   // 截图窗口对象
@@ -95,6 +120,8 @@ export default class Screenshots extends Events {
   private logger: Logger;
 
   private singleWindow: boolean;
+
+  private longScreenshotMode: LongScreenshotMode;
 
   private longScreenshotSession: {
     cancel: () => void;
@@ -115,6 +142,7 @@ export default class Screenshots extends Events {
     super();
     this.logger = opts?.logger || debug('electron-screenshots');
     this.singleWindow = opts?.singleWindow || false;
+    this.longScreenshotMode = opts?.longScreenshotMode ?? 'auto';
     this.listenIpc();
     this.$view.webContents.loadURL(
       `file://${require.resolve('react-screenshots/dist/electron.html')}`,
@@ -439,6 +467,12 @@ export default class Screenshots extends Events {
     let captureBusy = false;
     let frameTimer: ReturnType<typeof setInterval> | null = null;
     const registeredAccelerators: string[] = [];
+    const mode = this.longScreenshotMode;
+    const autoScrollStep = Math.max(
+      120,
+      Math.min(360, Math.round(data.bounds.height * 0.55)),
+    );
+    const autoSettleMs = 420;
 
     const cleanup = () => {
       if (frameTimer) {
@@ -450,6 +484,24 @@ export default class Screenshots extends Events {
       }
       this.destroyLongScreenshotController();
       this.longScreenshotSession = null;
+    };
+
+    const fail = async (message: string, failureWarnings = warnings) => {
+      cleanup();
+      this.sendLongScreenshotProgress({
+        state: 'failed',
+        frameCount: frames.length,
+        warnings: failureWarnings,
+        message,
+      });
+      this.emit(
+        'longScreenshotFailed',
+        new Event(),
+        data,
+        message,
+        failureWarnings,
+      );
+      await this.endCapture();
     };
 
     const captureFrame = async (force = false) => {
@@ -483,6 +535,26 @@ export default class Screenshots extends Events {
       } finally {
         captureBusy = false;
       }
+    };
+
+    const startManualSampler = (message?: string) => {
+      if (frameTimer) {
+        return;
+      }
+      if (message) {
+        this.sendLongScreenshotProgress({
+          state: 'capturing',
+          frameCount: frames.length,
+          warnings,
+          message,
+        });
+      }
+      frameTimer = setInterval(() => {
+        captureFrame();
+        if (frames.length >= 80) {
+          finish();
+        }
+      }, 300);
     };
 
     const finish = async () => {
@@ -573,6 +645,89 @@ export default class Screenshots extends Events {
       }
     };
 
+    const runAutomaticExternal = async (): Promise<boolean> => {
+      if (mode === 'manual') {
+        return false;
+      }
+
+      const scrollAdapter = createPlatformScrollAdapter();
+      if (!scrollAdapter) {
+        const message = `automatic external scrolling is not available on ${process.platform}`;
+        warnings.push(message);
+        if (mode === 'automatic') {
+          await fail(`长截图失败：${message}`);
+          return true;
+        }
+        return false;
+      }
+
+      this.sendLongScreenshotProgress({
+        state: 'scrolling',
+        frameCount: frames.length,
+        warnings,
+        message: '长截图自动滚动采集中。请保持目标窗口不动，可按 Enter 提前完成。',
+      });
+
+      let stableFrameCount = 0;
+      let movedFrameCount = 0;
+      for (let index = 0; index < 70 && !cancelled && !finishing; index += 1) {
+        const previousFrame = frames[frames.length - 1]?.image;
+        const result = await scrollAdapter.scrollBy(
+          data.bounds,
+          autoScrollStep,
+          data.display,
+        );
+        if (!result.ok) {
+          const message = `automatic external scrolling unavailable via ${
+            result.method
+          }: ${result.reason ?? 'unknown reason'}`;
+          warnings.push(message);
+          if (mode === 'automatic') {
+            await fail(`长截图失败：${message}`);
+            return true;
+          }
+          return false;
+        }
+
+        await delay(autoSettleMs);
+        await captureFrame();
+        const currentFrame = frames[frames.length - 1]?.image;
+        if (areFramesVisuallyStable(previousFrame, currentFrame)) {
+          stableFrameCount += 1;
+        } else {
+          stableFrameCount = 0;
+          movedFrameCount += 1;
+        }
+
+        this.sendLongScreenshotProgress({
+          state: 'scrolling',
+          frameCount: frames.length,
+          warnings,
+          message: `长截图自动滚动采集中：已捕获 ${frames.length} 帧。`,
+        });
+
+        if (stableFrameCount >= 2) {
+          if (movedFrameCount === 0) {
+            const message =
+              'automatic external scrolling did not move the selected region';
+            warnings.push(message);
+            if (mode === 'automatic') {
+              await fail(`长截图失败：${message}`);
+              return true;
+            }
+            return false;
+          }
+          await finish();
+          return true;
+        }
+      }
+
+      if (!cancelled && !finishing) {
+        await finish();
+      }
+      return true;
+    };
+
     const cancel = () => {
       if (cancelled) {
         return;
@@ -614,19 +769,23 @@ export default class Screenshots extends Events {
       state: 'starting',
       frameCount: 0,
       message:
-        '长截图模式即将开始。请在选区内滚动，按 Enter 完成，按 Esc 取消。',
+        mode === 'manual'
+          ? '长截图模式即将开始。请在选区内滚动，按 Enter 完成，按 Esc 取消。'
+          : '长截图模式即将开始。将优先尝试自动滚动，失败后可手动滚动。',
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 900));
+    await delay(900);
     this.$win?.hide();
-    await new Promise<void>((resolve) => setTimeout(resolve, 180));
+    await delay(180);
     await captureFrame();
-    frameTimer = setInterval(() => {
-      captureFrame();
-      if (frames.length >= 80) {
-        finish();
-      }
-    }, 300);
+    const automaticHandled = await runAutomaticExternal();
+    if (!automaticHandled && !cancelled && !finishing) {
+      startManualSampler(
+        warnings.length > 0
+          ? '自动滚动不可用。请在选区内手动滚动，按 Enter 完成，按 Esc 取消。'
+          : undefined,
+      );
+    }
   }
 
   /**

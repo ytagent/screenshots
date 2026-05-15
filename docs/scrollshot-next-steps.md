@@ -2,10 +2,10 @@
 
 ## Highest Priority
 
-1. Implement Windows external-window automatic scrolling:
-   - locate scrollable target under selected bounds;
+1. Improve Windows external-window automatic scrolling beyond the current wheel fallback:
+   - locate the scrollable target under selected bounds;
    - try UI Automation `ScrollPattern`;
-   - fall back to wheel input;
+   - fall back to the implemented wheel input path;
    - report platform limitation when neither path is available.
 2. Improve manual UX:
    - add a tray/menu-bar fallback for full-screen selections where no non-captured controller can fit;
@@ -17,6 +17,7 @@
 4. Keep the real desktop GitHub Actions smoke tests green:
    - toolbar/manual flow writes `artifacts/latest/electron-smoke/`;
    - toolbar/manual flow verifies the non-captured controller can finish the session;
+   - Windows external automatic wheel flow writes `artifacts/latest/electron-external-auto-smoke/`;
    - controlled Electron automatic flow writes `artifacts/latest/electron-auto-smoke/`;
    - Linux runs under Xvfb and Windows/macOS run on real hosted desktop sessions.
 

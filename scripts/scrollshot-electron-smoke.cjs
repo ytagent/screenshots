@@ -6,6 +6,12 @@ const { deflateSync } = require('node:zlib');
 const rootDir = resolve(__dirname, '..');
 const outDir = join(rootDir, 'artifacts', 'latest', 'electron-smoke');
 const autoOutDir = join(rootDir, 'artifacts', 'latest', 'electron-auto-smoke');
+const externalAutoOutDir = join(
+  rootDir,
+  'artifacts',
+  'latest',
+  'electron-external-auto-smoke',
+);
 
 function crc32(buffer) {
   let crc = 0xffffffff;
@@ -149,7 +155,7 @@ async function runInElectron() {
     writeSmokeError(error);
     console.error(error);
     app.exit(1);
-  }, 90000);
+  }, 160000);
 
   const Screenshots = require(join(
     rootDir,
@@ -218,7 +224,10 @@ async function runInElectron() {
   const expected = await captureFullPage(target);
   writeFileSync(join(outDir, 'expected.png'), expected);
 
-  const screenshots = new Screenshots({ singleWindow: true });
+  const screenshots = new Screenshots({
+    singleWindow: true,
+    longScreenshotMode: 'manual',
+  });
   let outputBuffer = null;
   let outputPlan = null;
   let failure = null;
@@ -346,6 +355,15 @@ async function runInElectron() {
 
   await screenshots.endCapture();
   target.destroy();
+  await runAutomaticExternalSmoke({
+    BrowserWindow,
+    nativeImage,
+    display,
+    compareImages,
+    createDiffImage,
+    nativeImageToPixelImage,
+    Screenshots,
+  });
   await runAutomaticControlledSmoke({
     BrowserWindow,
     nativeImage,
@@ -463,6 +481,175 @@ async function runAutomaticControlledSmoke({
     writeSmokeError(error, autoOutDir);
     throw error;
   } finally {
+    target.destroy();
+  }
+}
+
+async function runAutomaticExternalSmoke({
+  BrowserWindow,
+  nativeImage,
+  display,
+  compareImages,
+  createDiffImage,
+  nativeImageToPixelImage,
+  Screenshots,
+}) {
+  mkdirSync(externalAutoOutDir, { recursive: true });
+  if (process.platform !== 'win32') {
+    writeFileSync(
+      join(externalAutoOutDir, 'result.json'),
+      JSON.stringify(
+        {
+          passed: true,
+          skipped: true,
+          reason:
+            'External automatic OS scrolling smoke is enforced on Windows. macOS requires Accessibility permission and Linux requires xdotool in the runner.',
+          platform: process.platform,
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+
+  const x = display.bounds.x + 160;
+  const y = display.bounds.y + 120;
+  const width = 460;
+  const height = 480;
+  const target = new BrowserWindow({
+    x,
+    y,
+    width,
+    height,
+    frame: false,
+    show: true,
+    resizable: false,
+    movable: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  const screenshots = new Screenshots({
+    singleWindow: true,
+    longScreenshotMode: 'automatic',
+  });
+  let outputBuffer = null;
+  let outputPlan = null;
+  let failure = null;
+
+  try {
+    target.removeMenu();
+    await target.loadURL(
+      `data:text/html;charset=utf-8,${encodeURIComponent(buildFixtureHtml())}`,
+    );
+    target.show();
+    target.focus();
+    await delay(700);
+
+    const expected = await captureFullPage(target);
+    writeFileSync(join(externalAutoOutDir, 'expected.png'), expected);
+
+    screenshots.on('ok', (_event, buffer, data) => {
+      if (data?.longScreenshot) {
+        outputBuffer = buffer;
+      }
+    });
+    screenshots.on('longScreenshot', (_event, buffer, _data, plan) => {
+      outputBuffer = buffer;
+      outputPlan = plan;
+    });
+    screenshots.on('longScreenshotFailed', (_event, _data, message, warnings, plan) => {
+      failure = { message, warnings, plan };
+    });
+
+    await screenshots.startCapture();
+    await delay(700);
+    await dragSelect(screenshots.$view.webContents, {
+      x: x - display.bounds.x,
+      y: y - display.bounds.y,
+      width,
+      height,
+    });
+    await delay(300);
+    await clickLongScreenshotButton(screenshots.$view.webContents);
+
+    for (let tries = 0; tries < 120 && !outputBuffer && !failure; tries += 1) {
+      await delay(250);
+    }
+
+    if (failure) {
+      writeFileSync(
+        join(externalAutoOutDir, 'failure.json'),
+        JSON.stringify(failure, null, 2),
+      );
+      throw new Error(
+        `External automatic scrollshot smoke failed: ${failure.message}`,
+      );
+    }
+    if (!outputBuffer) {
+      writeFileSync(
+        join(externalAutoOutDir, 'failure.json'),
+        JSON.stringify(
+          {
+            message:
+              'External automatic scrollshot smoke did not produce an output buffer',
+            hasSession: Boolean(screenshots.longScreenshotSession),
+          },
+          null,
+          2,
+        ),
+      );
+      throw new Error(
+        'External automatic scrollshot smoke did not produce an output buffer',
+      );
+    }
+
+    writeFileSync(join(externalAutoOutDir, 'actual.png'), outputBuffer);
+    if (outputPlan) {
+      writeFileSync(
+        join(externalAutoOutDir, 'stitch-plan.json'),
+        JSON.stringify(outputPlan, null, 2),
+      );
+    }
+
+    const actualImage = nativeImage.createFromBuffer(outputBuffer);
+    const expectedImage = nativeImage.createFromBuffer(expected);
+    const actualPixels = nativeImageToPixelImage(actualImage);
+    const expectedPixels = nativeImageToPixelImage(expectedImage);
+    const diffStats = compareImages(actualPixels, expectedPixels);
+    const diffImage = createDiffImage(actualPixels, expectedPixels);
+    writeFileSync(join(externalAutoOutDir, 'diff.png'), pngEncode(diffImage));
+
+    const result = {
+      passed:
+        diffStats.score >= 0.985 &&
+        !diffStats.sizeMismatch &&
+        !outputPlan?.failureReason,
+      score: diffStats.score,
+      sizeMismatch: diffStats.sizeMismatch,
+      actual: actualImage.getSize(),
+      expected: expectedImage.getSize(),
+      plan: outputPlan,
+      platform: process.platform,
+    };
+    writeFileSync(
+      join(externalAutoOutDir, 'result.json'),
+      JSON.stringify(result, null, 2),
+    );
+
+    if (!result.passed) {
+      throw new Error(
+        `External automatic scrollshot smoke quality gate failed: ${JSON.stringify(result)}`,
+      );
+    }
+  } catch (error) {
+    writeSmokeError(error, externalAutoOutDir);
+    throw error;
+  } finally {
+    await screenshots.endCapture();
     target.destroy();
   }
 }
