@@ -34,7 +34,7 @@
   - Electron controlled-content capture and scroll adapter for pages owned by the app.
   - NativeImage conversion and platform adapter implementations/scaffolding.
   - Windows `WindowsScrollAdapter` tries UI Automation `ScrollPattern` first, records target diagnostics, then falls back to the verified wheel input path.
-  - macOS Accessibility wheel adapter is isolated and performs an `AXIsProcessTrusted` preflight before attempting external automatic scrolling.
+  - macOS CoreGraphics `CGEvent` scroll adapter is isolated and performs an `AXIsProcessTrusted` preflight before attempting external automatic scrolling.
 
 - `react-screenshots`
   - Toolbar entry point.

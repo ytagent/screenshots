@@ -879,13 +879,37 @@ function parseJsonObject(stdout) {
 }
 
 function isMacOSAccessibilityPermissionBlock(failure) {
+  const diagnostics = Array.isArray(failure?.scrollDiagnostics)
+    ? failure.scrollDiagnostics
+    : [];
+  if (diagnostics.some((diagnostic) => hasUntrustedAccessibility(diagnostic))) {
+    return true;
+  }
+
   const text = JSON.stringify(failure).toLowerCase();
   return (
-    text.includes('accessibility') ||
-    text.includes('axisprocesstrusted') ||
-    text.includes('assistive access') ||
-    text.includes('not trusted')
+    text.includes('axisprocesstrusted returned false') ||
+    text.includes('not allowed assistive access') ||
+    text.includes('not authorized to send apple events')
   );
+}
+
+function hasUntrustedAccessibility(value) {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  if (value.api === 'AXIsProcessTrusted' && value.trusted === false) {
+    return true;
+  }
+  if (value.accessibility?.trusted === false) {
+    return true;
+  }
+  if (Array.isArray(value.attempts)) {
+    return value.attempts.some((attempt) =>
+      hasUntrustedAccessibility(attempt?.details),
+    );
+  }
+  return Object.values(value).some((child) => hasUntrustedAccessibility(child));
 }
 
 async function captureFullPage(target) {

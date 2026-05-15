@@ -312,14 +312,14 @@ export class MacOSScrollAdapter implements ScrollshotScrollAdapter {
     display?: ScreenshotsData['display'],
   ): Promise<PlatformScrollResult> {
     const point = getCenterScreenPoint(bounds, display);
-    const direction = deltaY >= 0 ? 'down' : 'up';
-    const notches = Math.max(1, Math.min(8, Math.round(Math.abs(deltaY) / 120)));
+    const scrollPixels =
+      deltaY >= 0 ? -Math.round(Math.abs(deltaY)) : Math.round(Math.abs(deltaY));
     const accessibility = await inspectMacOSAccessibilityPermission();
     if (!accessibility.trusted) {
       return withScrollDiagnostics(
         {
           ok: false,
-          method: 'macos-accessibility-wheel',
+          method: 'macos-cgevent-scroll',
           reason:
             'macOS Accessibility permission is not granted for external automatic scrolling. Grant Accessibility access to the host app or use manual-assisted scrollshot.',
           diagnostics: accessibility,
@@ -343,25 +343,40 @@ export class MacOSScrollAdapter implements ScrollshotScrollAdapter {
     }
 
     try {
+      const script = `
+ObjC.import('ApplicationServices');
+ObjC.import('CoreGraphics');
+const trusted = $.AXIsProcessTrusted();
+if (!trusted) {
+  throw new Error('AXIsProcessTrusted returned false for the current process.');
+}
+const point = $.CGPointMake(${point.x}, ${point.y});
+$.CGWarpMouseCursorPosition(point);
+const event = $.CGEventCreateScrollWheelEvent(null, 0, 1, ${scrollPixels});
+if (!event) {
+  throw new Error('CGEventCreateScrollWheelEvent returned null.');
+}
+$.CGEventPost(0, event);
+console.log(JSON.stringify({
+  trusted,
+  api: 'CGEventCreateScrollWheelEvent',
+  point: { x: ${point.x}, y: ${point.y} },
+  scrollPixels: ${scrollPixels},
+  scrollUnit: 'pixel'
+}));
+`;
       const output = await runCommandDetailed(
         '/usr/bin/osascript',
-        [
-          '-e',
-          `tell application "System Events" to set the mouse location to {${point.x}, ${point.y}}`,
-          '-e',
-          `tell application "System Events" to scroll ${direction} ${notches}`,
-        ],
+        ['-l', 'JavaScript', '-e', script],
         2500,
       );
       return withScrollDiagnostics(
         {
           ok: true,
-          method: 'macos-accessibility-wheel',
+          method: 'macos-cgevent-scroll',
           diagnostics: {
             accessibility,
-            direction,
-            notches,
-            stdout: output.stdout.trim() || undefined,
+            ...parseCommandJson(output.stdout),
           },
         },
         {
@@ -371,11 +386,10 @@ export class MacOSScrollAdapter implements ScrollshotScrollAdapter {
           attempts: [
             {
               ok: true,
-              method: 'macos-accessibility-wheel',
+              method: 'macos-cgevent-scroll',
               diagnostics: {
                 accessibility,
-                direction,
-                notches,
+                ...parseCommandJson(output.stdout),
               },
             },
           ],
@@ -387,14 +401,14 @@ export class MacOSScrollAdapter implements ScrollshotScrollAdapter {
         ...withScrollDiagnostics(
           {
             ok: false,
-            method: 'macos-accessibility-wheel',
+            method: 'macos-cgevent-scroll',
             reason: `${errorMessage(
               err,
             )}. macOS external automatic scrolling requires Accessibility permission for the host app.`,
             diagnostics: {
               accessibility,
-              direction,
-              notches,
+              scrollPixels,
+              ...parseCommandJson(commandFailure?.stdout),
               stdout: commandFailure?.stdout,
               stderr: commandFailure?.stderr,
               code: commandFailure?.code,
@@ -408,12 +422,12 @@ export class MacOSScrollAdapter implements ScrollshotScrollAdapter {
             attempts: [
               {
                 ok: false,
-                method: 'macos-accessibility-wheel',
+                method: 'macos-cgevent-scroll',
                 reason: errorMessage(err),
                 diagnostics: {
                   accessibility,
-                  direction,
-                  notches,
+                  scrollPixels,
+                  ...parseCommandJson(commandFailure?.stdout),
                   stdout: commandFailure?.stdout,
                   stderr: commandFailure?.stderr,
                   code: commandFailure?.code,
