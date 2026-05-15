@@ -81,6 +81,12 @@ function writeSmokeError(error, dir = outDir) {
   );
 }
 
+function desktopSmokeScoreThreshold() {
+  // macOS desktop capture applies display color management to screen pixels,
+  // while the CDP reference image remains unprofiled.
+  return process.platform === 'darwin' ? 0.92 : 0.985;
+}
+
 function buildFixtureHtml() {
   return `<!doctype html>
 <html>
@@ -345,12 +351,14 @@ async function runInElectron() {
   const diffStats = compareImages(actualPixels, expectedPixels);
   const diffImage = createDiffImage(actualPixels, expectedPixels);
   writeFileSync(join(outDir, 'diff.png'), pngEncode(diffImage));
+  const scoreThreshold = desktopSmokeScoreThreshold();
 
   const result = {
     passed:
-      diffStats.score >= 0.985 &&
+      diffStats.score >= scoreThreshold &&
       !diffStats.sizeMismatch &&
       !outputPlan?.failureReason,
+    scoreThreshold,
     score: diffStats.score,
     sizeMismatch: diffStats.sizeMismatch,
     actual: actualImage.getSize(),
@@ -363,6 +371,10 @@ async function runInElectron() {
     scrollMethods: outputData?.longScreenshotScrollMethods,
   };
   writeFileSync(join(outDir, 'result.json'), JSON.stringify(result, null, 2));
+
+  if (!result.passed) {
+    throw new Error(`Electron smoke quality gate failed: ${JSON.stringify(result)}`);
+  }
 
   await screenshots.endCapture();
   target.destroy();
@@ -387,10 +399,6 @@ async function runInElectron() {
   });
   app.quit();
   clearTimeout(hardTimeout);
-
-  if (!result.passed) {
-    throw new Error(`Electron smoke quality gate failed: ${JSON.stringify(result)}`);
-  }
 }
 
 async function runAutomaticControlledSmoke({
