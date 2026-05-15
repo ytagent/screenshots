@@ -1,0 +1,135 @@
+{
+  "frameCount": 10,
+  "acceptedFrameCount": 10,
+  "discardedDuplicateFrames": [],
+  "width": 460,
+  "height": 2640,
+  "stickyHeaderRows": 0,
+  "estimatedOffsets": [
+    0,
+    240,
+    480,
+    720,
+    960,
+    1200,
+    1440,
+    1680,
+    1920,
+    2160
+  ],
+  "seamRows": [
+    480,
+    720,
+    960,
+    1200,
+    1440,
+    1680,
+    1920,
+    2160,
+    2400
+  ],
+  "frames": [
+    {
+      "inputIndex": 0,
+      "outputY": 0,
+      "sourceY": 0,
+      "rows": 480,
+      "deltaY": 0,
+      "overlapRows": 480,
+      "confidence": 1,
+      "warnings": []
+    },
+    {
+      "inputIndex": 1,
+      "outputY": 480,
+      "sourceY": 240,
+      "rows": 240,
+      "deltaY": 240,
+      "overlapRows": 240,
+      "confidence": 1,
+      "warnings": []
+    },
+    {
+      "inputIndex": 2,
+      "outputY": 720,
+      "sourceY": 240,
+      "rows": 240,
+      "deltaY": 240,
+      "overlapRows": 240,
+      "confidence": 1,
+      "warnings": []
+    },
+    {
+      "inputIndex": 3,
+      "outputY": 960,
+      "sourceY": 240,
+      "rows": 240,
+      "deltaY": 240,
+      "overlapRows": 240,
+      "confidence": 1,
+      "warnings": []
+    },
+    {
+      "inputIndex": 4,
+      "outputY": 1200,
+      "sourceY": 240,
+      "rows": 240,
+      "deltaY": 240,
+      "overlapRows": 240,
+      "confidence": 1,
+      "warnings": []
+    },
+    {
+      "inputIndex": 5,
+      "outputY": 1440,
+      "sourceY": 240,
+      "rows": 240,
+      "deltaY": 240,
+      "overlapRows": 240,
+      "confidence": 1,
+      "warnings": []
+    },
+    {
+      "inputIndex": 6,
+      "outputY": 1680,
+      "sourceY": 240,
+      "rows": 240,
+      "deltaY": 240,
+      "overlapRows": 240,
+      "confidence": 1,
+      "warnings": []
+    },
+    {
+      "inputIndex": 7,
+      "outputY": 1920,
+      "sourceY": 240,
+      "rows": 240,
+      "deltaY": 240,
+      "overlapRows": 240,
+      "confidence": 1,
+      "warnings": []
+    },
+    {
+      "inputIndex": 8,
+      "outputY": 2160,
+      "sourceY": 240,
+      "rows": 240,
+      "deltaY": 240,
+      "overlapRows": 240,
+      "confidence": 1,
+      "warnings": []
+    },
+    {
+      "inputIndex": 9,
+      "outputY": 2400,
+      "sourceY": 240,
+      "rows": 240,
+      "deltaY": 240,
+      "overlapRows": 240,
+      "confidence": 1,
+      "warnings": []
+    }
+  ],
+  "warnings": [],
+  "deviceScaleFactor": 1
+}

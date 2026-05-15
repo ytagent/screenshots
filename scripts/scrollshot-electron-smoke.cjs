@@ -5,6 +5,7 @@ const { deflateSync } = require('node:zlib');
 
 const rootDir = resolve(__dirname, '..');
 const outDir = join(rootDir, 'artifacts', 'latest', 'electron-smoke');
+const autoOutDir = join(rootDir, 'artifacts', 'latest', 'electron-auto-smoke');
 
 function crc32(buffer) {
   let crc = 0xffffffff;
@@ -59,10 +60,10 @@ function delay(ms) {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, ms));
 }
 
-function writeSmokeError(error) {
-  mkdirSync(outDir, { recursive: true });
+function writeSmokeError(error, dir = outDir) {
+  mkdirSync(dir, { recursive: true });
   writeFileSync(
-    join(outDir, 'error.json'),
+    join(dir, 'error.json'),
     JSON.stringify(
       {
         message: error instanceof Error ? error.message : String(error),
@@ -159,6 +160,12 @@ async function runInElectron() {
     compareImages,
     createDiffImage,
   } = require(join(rootDir, 'packages', 'scrollshot-core', 'lib'));
+  const { AutomaticScrollshotSession } = require(join(
+    rootDir,
+    'packages',
+    'scrollshot-session',
+    'lib',
+  ));
   const { nativeImageToPixelImage } = require(join(
     rootDir,
     'packages',
@@ -166,6 +173,14 @@ async function runInElectron() {
     'lib',
     'scrollshot',
     'nativeImage.js',
+  ));
+  const { ElectronControlledContentAdapter } = require(join(
+    rootDir,
+    'packages',
+    'electron-screenshots',
+    'lib',
+    'scrollshot',
+    'adapters.js',
   ));
 
   app.commandLine.appendSwitch('force-device-scale-factor', '1');
@@ -301,11 +316,124 @@ async function runInElectron() {
 
   await screenshots.endCapture();
   target.destroy();
+  await runAutomaticControlledSmoke({
+    BrowserWindow,
+    nativeImage,
+    display,
+    compareImages,
+    createDiffImage,
+    nativeImageToPixelImage,
+    AutomaticScrollshotSession,
+    ElectronControlledContentAdapter,
+  });
   app.quit();
   clearTimeout(hardTimeout);
 
   if (!result.passed) {
     throw new Error(`Electron smoke quality gate failed: ${JSON.stringify(result)}`);
+  }
+}
+
+async function runAutomaticControlledSmoke({
+  BrowserWindow,
+  nativeImage,
+  display,
+  compareImages,
+  createDiffImage,
+  nativeImageToPixelImage,
+  AutomaticScrollshotSession,
+  ElectronControlledContentAdapter,
+}) {
+  mkdirSync(autoOutDir, { recursive: true });
+  const width = 460;
+  const height = 480;
+  const target = new BrowserWindow({
+    x: display.bounds.x + 120,
+    y: display.bounds.y + 120,
+    width,
+    height,
+    frame: false,
+    show: true,
+    resizable: false,
+    movable: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  try {
+    target.removeMenu();
+    await target.loadURL(
+      `data:text/html;charset=utf-8,${encodeURIComponent(buildFixtureHtml())}`,
+    );
+    target.show();
+    target.focus();
+    await delay(500);
+
+    const expected = await captureFullPage(target);
+    writeFileSync(join(autoOutDir, 'expected.png'), expected);
+
+    const adapter = new ElectronControlledContentAdapter(target.webContents, {
+      x: 0,
+      y: 0,
+      width,
+      height,
+    });
+    const session = new AutomaticScrollshotSession(adapter, adapter, {
+      scrollStepPx: 240,
+      settleMs: 120,
+      maxFrames: 16,
+      stitch: {
+        stickyHeaderRows: 'auto',
+        minOverlapRatio: 0.16,
+        maxOverlapRatio: 0.96,
+        minScrollDelta: 3,
+        minConfidence: 0.96,
+        sampleColumns: 64,
+        sampleRows: 220,
+      },
+    });
+    const output = await session.run();
+    const actualBuffer = pngEncode(output.image);
+    writeFileSync(join(autoOutDir, 'actual.png'), actualBuffer);
+    writeFileSync(
+      join(autoOutDir, 'stitch-plan.json'),
+      JSON.stringify(output.plan, null, 2),
+    );
+
+    const expectedImage = nativeImage.createFromBuffer(expected);
+    const expectedPixels = nativeImageToPixelImage(expectedImage);
+    const diffStats = compareImages(output.image, expectedPixels);
+    const diffImage = createDiffImage(output.image, expectedPixels);
+    writeFileSync(join(autoOutDir, 'diff.png'), pngEncode(diffImage));
+
+    const result = {
+      passed:
+        diffStats.score >= 0.985 &&
+        !diffStats.sizeMismatch &&
+        !output.plan.failureReason,
+      score: diffStats.score,
+      sizeMismatch: diffStats.sizeMismatch,
+      actual: {
+        width: output.image.width,
+        height: output.image.height,
+      },
+      expected: expectedImage.getSize(),
+      plan: output.plan,
+    };
+    writeFileSync(join(autoOutDir, 'result.json'), JSON.stringify(result, null, 2));
+
+    if (!result.passed) {
+      throw new Error(
+        `Automatic Electron scrollshot smoke quality gate failed: ${JSON.stringify(result)}`,
+      );
+    }
+  } catch (error) {
+    writeSmokeError(error, autoOutDir);
+    throw error;
+  } finally {
+    target.destroy();
   }
 }
 

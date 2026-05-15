@@ -2,20 +2,23 @@
 
 ## Highest Priority
 
-1. Add a real desktop GitHub Actions smoke test that opens an Electron fixture window, starts scrollshot from the toolbar, scrolls the selected region, finishes, and uploads the output image.
-2. Implement Windows automatic scrolling:
+1. Implement Windows external-window automatic scrolling:
    - locate scrollable target under selected bounds;
    - try UI Automation `ScrollPattern`;
    - fall back to wheel input;
    - report platform limitation when neither path is available.
-3. Improve manual UX:
+2. Improve manual UX:
    - show a small controller outside the capture rect when possible;
    - keep Enter/Esc as reliable global fallbacks;
    - surface low-confidence warnings before failing.
-4. Add real macOS verification:
+3. Add real macOS external-window automatic scrolling:
    - ScreenCaptureKit capture adapter;
    - Accessibility scroll adapter;
    - explicit permission failure reporting.
+4. Keep the real desktop GitHub Actions smoke tests green:
+   - toolbar/manual flow writes `artifacts/latest/electron-smoke/`;
+   - controlled Electron automatic flow writes `artifacts/latest/electron-auto-smoke/`;
+   - Linux runs under Xvfb and Windows/macOS run on real hosted desktop sessions.
 
 ## Quality Gate
 

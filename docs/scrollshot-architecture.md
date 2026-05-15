@@ -5,7 +5,7 @@
 1. The user starts the normal Electron screenshot overlay.
 2. The user selects a region.
 3. The existing floating toolbar shows a long screenshot button.
-4. Clicking it starts manual-assisted scrollshot mode for that selected region.
+4. Clicking it starts scrollshot mode for that selected region.
 5. The overlay briefly shows instructions, then hides so the underlying app can receive scroll input.
 6. The app samples the selected display region repeatedly.
 7. The user scrolls the target content, presses Enter to finish, or presses Esc to cancel.
@@ -28,7 +28,8 @@
 - `electron-screenshots`
   - Existing screenshot overlay and display capture.
   - Region-based manual scrollshot capture from the selected bounds.
-  - NativeImage conversion and adapter scaffolding.
+  - Electron controlled-content capture and scroll adapter for pages owned by the app.
+  - NativeImage conversion and platform adapter scaffolding.
   - Windows/macOS external scroll adapters remain isolated stubs until they can be verified on those OSes.
 
 - `react-screenshots`
@@ -36,9 +37,9 @@
   - User instructions/progress surface.
   - IPC call through preload.
 
-## Implemented Capture Path
+## Implemented Capture Paths
 
-The implemented product path is manual-assisted external region capture:
+The implemented user-facing product path is manual-assisted external region capture:
 
 - capture source: existing `node-screenshots` path, with Electron `desktopCapturer` fallback;
 - crop source: selected overlay bounds converted from DIP to native image pixels;
@@ -48,12 +49,22 @@ The implemented product path is manual-assisted external region capture:
 
 This path is intentionally conservative: a low-confidence stitch produces `longScreenshotFailed` instead of a corrupted image.
 
+The implemented automatic path is for controlled Electron content:
+
+- capture source: `webContents.capturePage`;
+- scroll source: `webContents.executeJavaScript` with window scroll state;
+- bottom detection: page scroll position plus viewport height;
+- output: the same shared `scrollshot-session` and `scrollshot-core` stitching code.
+
+This path is verified by the Electron smoke test as `artifacts/latest/electron-auto-smoke/`. It proves the automatic session and controlled-content adapter. It does not claim OS-level external-window automatic scrolling.
+
 ## Evaluation
 
 Run:
 
 ```bash
 pnpm eval:scrollshot
+pnpm smoke:scrollshot
 ```
 
 Artifacts are written to `artifacts/latest/`:
@@ -66,6 +77,8 @@ Artifacts are written to `artifacts/latest/`:
 - `seams.png`
 - `stitch-plan.json`
 - per-fixture `frames/` and `log.json`
+- `electron-smoke/` for real toolbar/manual desktop flow evidence
+- `electron-auto-smoke/` for controlled Electron automatic flow evidence
 
 Fixtures currently include:
 
@@ -81,9 +94,9 @@ Fixtures currently include:
 
 ## Platform Notes
 
-Windows is the first real external-window target. The next implementation step is a Windows scroll adapter that tries UI Automation `ScrollPattern` first, then a wheel fallback. Electron `desktopCapturer` is available as a capture source, and `webContents.capturePage` is the preferred path for controlled Electron content.
+Windows is verified in CI for the deterministic core eval, the real Electron toolbar/manual flow, and the controlled Electron automatic flow. External-window automatic scrolling is still scaffolded. The next implementation step is a Windows scroll adapter that tries UI Automation `ScrollPattern` first, then a wheel fallback.
 
-macOS is not claimed as verified. The architecture isolates future ScreenCaptureKit capture and Accessibility scrolling behind adapters. macOS work must verify Screen Recording and Accessibility permissions on real macOS before marking support complete.
+macOS is verified in CI for the deterministic core eval, the real Electron toolbar/manual flow, and the controlled Electron automatic flow. OS-level external-window automatic scrolling is not claimed as complete. Future macOS work must implement and verify ScreenCaptureKit capture and Accessibility scrolling after permissions are available on real macOS.
 
 Reference docs used while designing the adapters:
 
@@ -95,7 +108,8 @@ Reference docs used while designing the adapters:
 
 ## Known Gaps
 
-- Automatic external-window scrolling is scaffolded, not complete.
-- macOS capture/scroll is scaffolded and unverified.
+- Automatic OS-level external-window scrolling is scaffolded, not complete.
+- Windows UI Automation / SendInput scrolling is not implemented.
+- macOS ScreenCaptureKit / Accessibility scrolling is not implemented.
 - The product path currently uses keyboard finish/cancel while the overlay is hidden. A release UX should add a small non-captured controller or tray/global hotkey polish.
-- CI eval is deterministic and cross-platform, but it does not yet drive a real desktop app window with OS-level scrolling.
+- The real desktop smoke tests drive an Electron fixture window, but they do not drive OS-level external-window automatic scrolling.

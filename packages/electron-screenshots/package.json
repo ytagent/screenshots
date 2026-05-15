@@ -40,7 +40,8 @@
     "fs-extra": "^11.3.3",
     "node-screenshots": "^0.2.8",
     "react-screenshots": "workspace:*",
-    "scrollshot-core": "workspace:*"
+    "scrollshot-core": "workspace:*",
+    "scrollshot-session": "workspace:*"
   },
   "peerDependencies": {
     "electron": ">=20"

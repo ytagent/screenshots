@@ -29,6 +29,9 @@ importers:
       scrollshot-core:
         specifier: workspace:*
         version: link:../scrollshot-core
+      scrollshot-session:
+        specifier: workspace:*
+        version: link:../scrollshot-session
     devDependencies:
       '@types/debug':
         specifier: ^4.1.12
