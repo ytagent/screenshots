@@ -7,7 +7,7 @@
    - verify the trusted Accessibility action or CoreGraphics scroll event actually moves the selected target region;
    - keep the ScreenCaptureKit `SCShareableContent` probe in the smoke artifact;
    - require a correct stitched output when Accessibility permission is available;
-   - keep hosted-runner skips only for explicit environment blocks such as missing Accessibility trust or accepted Accessibility/CoreGraphics scroll attempts that do not move the target.
+   - keep hosted-runner skips only for explicit environment blocks such as missing Accessibility trust, system dialog interception, or accepted Accessibility/CoreGraphics scroll attempts that do not move the target.
 2. Improve manual UX:
    - consider a tray icon fallback for environments where the app-menu fallback is not reachable;
    - surface low-confidence warnings before failing.

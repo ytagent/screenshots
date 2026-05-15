@@ -913,8 +913,16 @@ function isMacOSAccessibilityPermissionBlock(failure) {
     return true;
   }
 
-  const text = JSON.stringify(failure).toLowerCase();
+  const text = [
+    failure?.message,
+    failure?.plan?.failureReason,
+    failure?.warnings?.join?.('\n'),
+  ]
+    .filter(Boolean)
+    .join('\n')
+    .toLowerCase();
   return (
+    text.includes('macos accessibility permission is not granted') ||
     text.includes('axisprocesstrusted returned false') ||
     text.includes('not allowed assistive access') ||
     text.includes('not authorized to send apple events')
@@ -951,6 +959,16 @@ function getMacOSTrustedScrollNoMovementBlock(failure, screenCaptureKitProbe) {
   const preflightText = captureProbeSucceeded
     ? 'ScreenCaptureKit and Accessibility preflight succeeded'
     : 'Accessibility preflight succeeded';
+  const hasSystemDialogInterception = diagnostics.some((diagnostic) =>
+    hasMacOSSystemDialogInterception(diagnostic),
+  );
+  if (hasSystemDialogInterception) {
+    return {
+      code: 'macos-hosted-runner-system-dialog-intercepts-scroll',
+      reason: `macOS external automatic scrolling could not be verified in this hosted runner: ${preflightText}, but an Accessibility hit-test found a system notification/dialog over the selected region and trusted scroll attempts did not move the target.`,
+    };
+  }
+
   if (hasAXAction && hasCGEvent) {
     return {
       code: 'macos-hosted-runner-trusted-scroll-no-movement',
@@ -1005,6 +1023,44 @@ function hasTrustedMacOSCGEventScroll(value) {
 
   return Object.values(value).some((child) =>
     hasTrustedMacOSCGEventScroll(child),
+  );
+}
+
+function hasMacOSSystemDialogInterception(value) {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const ancestors = Array.isArray(value.inspectedAncestors)
+    ? value.inspectedAncestors
+    : [];
+  if (
+    ancestors.some((ancestor) => {
+      if (!ancestor || typeof ancestor !== 'object') {
+        return false;
+      }
+      return (
+        String(ancestor.subrole ?? '') === 'AXSystemDialog' ||
+        String(ancestor.title ?? '') === 'UserNotificationCenter' ||
+        String(ancestor.description ?? '').toLowerCase() === 'alert'
+      );
+    })
+  ) {
+    return true;
+  }
+
+  if (Array.isArray(value.attempts)) {
+    return value.attempts.some((attempt) =>
+      hasMacOSSystemDialogInterception(attempt?.details ?? attempt),
+    );
+  }
+
+  if (value.details && typeof value.details === 'object') {
+    return hasMacOSSystemDialogInterception(value.details);
+  }
+
+  return Object.values(value).some((child) =>
+    hasMacOSSystemDialogInterception(child),
   );
 }
 

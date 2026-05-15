@@ -138,7 +138,7 @@ export class WindowsScrollAdapter implements ScrollshotScrollAdapter {
   }
 }
 
-const WINDOWS_SCROLL_COMMAND_TIMEOUT_MS = 7000;
+const WINDOWS_SCROLL_COMMAND_TIMEOUT_MS = 20000;
 
 async function scrollWithWindowsAutomation(
   point: { x: number; y: number },
