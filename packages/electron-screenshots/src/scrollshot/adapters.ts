@@ -105,11 +105,11 @@ Add-Type -Namespace Win32 -Name NativeMethods -MemberDefinition @'
 [System.Runtime.InteropServices.DllImport("user32.dll")]
 public static extern bool SetCursorPos(int X, int Y);
 [System.Runtime.InteropServices.DllImport("user32.dll")]
-public static extern void mouse_event(uint dwFlags, uint dx, uint dy, int dwData, UIntPtr dwExtraInfo);
+public static extern void mouse_event(uint dwFlags, uint dx, uint dy, int dwData, System.UIntPtr dwExtraInfo);
 '@
 [Win32.NativeMethods]::SetCursorPos(${point.x}, ${point.y}) | Out-Null
 Start-Sleep -Milliseconds 20
-[Win32.NativeMethods]::mouse_event(0x0800, 0, 0, ${wheelDelta}, [UIntPtr]::Zero)
+[Win32.NativeMethods]::mouse_event(0x0800, 0, 0, ${wheelDelta}, [System.UIntPtr]::Zero)
 `;
     try {
       await runCommand(
@@ -246,9 +246,27 @@ function runCommand(
       },
       (error, stdout, stderr) => {
         if (error) {
+          const code =
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error
+              ? String(error.code)
+              : undefined;
+          const signal =
+            typeof error === 'object' &&
+            error !== null &&
+            'signal' in error
+              ? String(error.signal)
+              : undefined;
           reject(
             new Error(
-              [error.message, stdout.toString().trim(), stderr.toString().trim()]
+              [
+                error.message,
+                code ? `code=${code}` : undefined,
+                signal ? `signal=${signal}` : undefined,
+                stdout.toString().trim(),
+                stderr.toString().trim(),
+              ]
                 .filter(Boolean)
                 .join('\n'),
             ),
