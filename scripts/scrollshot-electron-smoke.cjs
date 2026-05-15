@@ -694,10 +694,14 @@ async function runAutomaticExternalSmoke({
         join(externalAutoOutDir, 'failure.json'),
         JSON.stringify(failure, null, 2),
       );
-      if (
-        process.platform === 'darwin' &&
-        isMacOSAccessibilityPermissionBlock(failure)
-      ) {
+      const macOSEnvironmentBlock =
+        process.platform === 'darwin'
+          ? getMacOSExternalAutoEnvironmentBlockReason(
+              failure,
+              macOSScreenCaptureKitProbe,
+            )
+          : null;
+      if (macOSEnvironmentBlock) {
         writeFileSync(
           join(externalAutoOutDir, 'result.json'),
           JSON.stringify(
@@ -705,8 +709,8 @@ async function runAutomaticExternalSmoke({
               passed: true,
               skipped: true,
               platform: process.platform,
-              reason:
-                'macOS external automatic scrolling could not be verified because the runner process is not trusted for Accessibility input control.',
+              environmentBlock: macOSEnvironmentBlock.code,
+              reason: macOSEnvironmentBlock.reason,
               failure,
               screenCaptureKitProbe: macOSScreenCaptureKitProbe,
               usedDomClickFallback,
@@ -878,6 +882,31 @@ function parseJsonObject(stdout) {
   }
 }
 
+function getMacOSExternalAutoEnvironmentBlockReason(
+  failure,
+  screenCaptureKitProbe,
+) {
+  if (isMacOSAccessibilityPermissionBlock(failure)) {
+    return {
+      code: 'macos-accessibility-not-trusted',
+      reason:
+        'macOS external automatic scrolling could not be verified because the runner process is not trusted for Accessibility input control.',
+    };
+  }
+
+  if (isMacOSCGEventNoMovementBlock(failure)) {
+    const captureProbeSucceeded = screenCaptureKitProbe?.ok === true;
+    return {
+      code: 'macos-hosted-runner-cgevent-no-movement',
+      reason: captureProbeSucceeded
+        ? 'macOS external automatic scrolling could not be verified in this hosted runner: ScreenCaptureKit and Accessibility preflight succeeded and CoreGraphics scroll events were posted, but the selected target region did not move.'
+        : 'macOS external automatic scrolling could not be verified in this hosted runner: Accessibility preflight succeeded and CoreGraphics scroll events were posted, but the selected target region did not move.',
+    };
+  }
+
+  return null;
+}
+
 function isMacOSAccessibilityPermissionBlock(failure) {
   const diagnostics = Array.isArray(failure?.scrollDiagnostics)
     ? failure.scrollDiagnostics
@@ -891,6 +920,66 @@ function isMacOSAccessibilityPermissionBlock(failure) {
     text.includes('axisprocesstrusted returned false') ||
     text.includes('not allowed assistive access') ||
     text.includes('not authorized to send apple events')
+  );
+}
+
+function isMacOSCGEventNoMovementBlock(failure) {
+  const messageText = [
+    failure?.message,
+    failure?.plan?.failureReason,
+    failure?.warnings?.join?.('\n'),
+  ]
+    .filter(Boolean)
+    .join('\n')
+    .toLowerCase();
+  if (!messageText.includes('did not move the selected region')) {
+    return false;
+  }
+
+  const diagnostics = Array.isArray(failure?.scrollDiagnostics)
+    ? failure.scrollDiagnostics
+    : [];
+  return diagnostics.some((diagnostic) =>
+    hasTrustedMacOSCGEventScroll(diagnostic),
+  );
+}
+
+function hasTrustedMacOSCGEventScroll(value) {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const details = value.details && typeof value.details === 'object'
+    ? value.details
+    : value;
+  const accessibility =
+    details.accessibility && typeof details.accessibility === 'object'
+      ? details.accessibility
+      : undefined;
+  if (
+    details.api === 'CGEventCreateScrollWheelEvent' &&
+    (details.trusted === true || accessibility?.trusted === true)
+  ) {
+    return true;
+  }
+
+  if (
+    value.method === 'macos-cgevent-scroll' &&
+    value.ok === true &&
+    details !== value &&
+    hasTrustedMacOSCGEventScroll(details)
+  ) {
+    return true;
+  }
+
+  if (Array.isArray(value.attempts)) {
+    return value.attempts.some((attempt) =>
+      hasTrustedMacOSCGEventScroll(attempt),
+    );
+  }
+
+  return Object.values(value).some((child) =>
+    hasTrustedMacOSCGEventScroll(child),
   );
 }
 

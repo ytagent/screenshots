@@ -2,11 +2,12 @@
 
 ## Highest Priority
 
-1. Verify macOS external-window automatic scrolling in a permissioned environment:
+1. Verify macOS external-window automatic scrolling in a real signed/permissioned desktop environment:
    - grant Accessibility input control to the host app or signed test helper;
+   - verify the trusted CoreGraphics or Accessibility scroll event actually moves the selected target region;
    - keep the ScreenCaptureKit `SCShareableContent` probe in the smoke artifact;
    - require a correct stitched output when Accessibility permission is available;
-   - keep the permission-blocked skip only for hosted runners that cannot grant input control.
+   - keep hosted-runner skips only for explicit environment blocks such as missing Accessibility trust or accepted scroll events that do not move the target.
 2. Improve manual UX:
    - consider a tray icon fallback for environments where the app-menu fallback is not reachable;
    - surface low-confidence warnings before failing.
@@ -18,7 +19,7 @@
    - toolbar/manual flow writes `artifacts/latest/electron-smoke/`;
    - toolbar/manual flow verifies the non-captured controller can finish the session;
    - Windows external automatic wheel flow writes `artifacts/latest/electron-external-auto-smoke/`;
-   - macOS external automatic smoke records ScreenCaptureKit and Accessibility diagnostics, and only skips when Accessibility is not granted;
+   - macOS external automatic smoke records ScreenCaptureKit, Accessibility, and CoreGraphics event diagnostics, and only skips when the hosted runner exposes a diagnosed environment block;
    - controlled Electron automatic flow writes `artifacts/latest/electron-auto-smoke/`;
    - Linux runs under Xvfb and Windows/macOS run on real hosted desktop sessions.
 
