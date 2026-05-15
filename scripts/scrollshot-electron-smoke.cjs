@@ -87,14 +87,14 @@ function desktopSmokeScoreThreshold() {
   return process.platform === 'darwin' ? 0.92 : 0.985;
 }
 
-function buildFixtureHtml() {
+function buildFixtureHtml({ width = 460 } = {}) {
   return `<!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
 <style>
 html, body {
-  width: 460px;
+  width: ${width}px;
   margin: 0;
   padding: 0;
   overflow: auto;
@@ -111,7 +111,7 @@ canvas {
 }
 </style>
 </head>
-<body><canvas id="fixture" width="460" height="2640"></canvas>
+<body><canvas id="fixture" width="${width}" height="2640"></canvas>
 <script>
 const canvas = document.getElementById('fixture');
 const ctx = canvas.getContext('2d');
@@ -505,7 +505,7 @@ async function runAutomaticControlledSmoke({
   try {
     target.removeMenu();
     await target.loadURL(
-      `data:text/html;charset=utf-8,${encodeURIComponent(buildFixtureHtml())}`,
+      `data:text/html;charset=utf-8,${encodeURIComponent(buildFixtureHtml({ width }))}`,
     );
     target.show();
     target.focus();
@@ -609,7 +609,7 @@ async function runAutomaticExternalSmoke({
     return;
   }
 
-  const width = 460;
+  const width = process.platform === 'darwin' ? 320 : 460;
   const height = 480;
   const targetXOffset =
     process.platform === 'darwin'
@@ -646,7 +646,7 @@ async function runAutomaticExternalSmoke({
   try {
     target.removeMenu();
     await target.loadURL(
-      `data:text/html;charset=utf-8,${encodeURIComponent(buildFixtureHtml())}`,
+      `data:text/html;charset=utf-8,${encodeURIComponent(buildFixtureHtml({ width }))}`,
     );
     target.show();
     target.focus();
