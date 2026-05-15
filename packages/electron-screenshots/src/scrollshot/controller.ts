@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, ipcMain, type IpcMainEvent } from 'electron';
 import type { Bounds, ScreenshotsData } from '../preload.js';
 
 export interface LongScreenshotProgress {
@@ -27,15 +27,37 @@ class ElectronLongScreenshotController
 {
   private progress: LongScreenshotProgress | null = null;
 
+  private disposed = false;
+
+  private readonly finishListener = (event: IpcMainEvent) => {
+    if (event.sender === this.window.webContents) {
+      this.onFinish().catch(() => undefined);
+    }
+  };
+
+  private readonly cancelListener = (event: IpcMainEvent) => {
+    if (event.sender === this.window.webContents) {
+      this.onCancel();
+    }
+  };
+
   public constructor(
     public readonly window: BrowserWindow,
     private readonly onFinish: () => Promise<void>,
     private readonly onCancel: () => void,
   ) {
+    ipcMain.on(
+      'SCREENSHOTS:longScreenshot-controller-finish',
+      this.finishListener,
+    );
+    ipcMain.on(
+      'SCREENSHOTS:longScreenshot-controller-cancel',
+      this.cancelListener,
+    );
     this.window.webContents.on('will-navigate', (event, url) => {
       if (url === 'scrollshot://finish') {
         event.preventDefault();
-        this.onFinish();
+        this.onFinish().catch(() => undefined);
         return;
       }
       if (url === 'scrollshot://cancel') {
@@ -47,6 +69,9 @@ class ElectronLongScreenshotController
       if (this.progress) {
         this.update(this.progress);
       }
+    });
+    this.window.on('closed', () => {
+      this.disposeListeners();
     });
   }
 
@@ -63,9 +88,25 @@ class ElectronLongScreenshotController
   }
 
   public destroy(): void {
+    this.disposeListeners();
     if (!this.window.isDestroyed()) {
       this.window.destroy();
     }
+  }
+
+  private disposeListeners(): void {
+    if (this.disposed) {
+      return;
+    }
+    this.disposed = true;
+    ipcMain.off(
+      'SCREENSHOTS:longScreenshot-controller-finish',
+      this.finishListener,
+    );
+    ipcMain.off(
+      'SCREENSHOTS:longScreenshot-controller-cancel',
+      this.cancelListener,
+    );
   }
 }
 
@@ -103,6 +144,7 @@ export function createLongScreenshotController({
     autoHideMenuBar: true,
     backgroundColor: '#111827',
     webPreferences: {
+      preload: require.resolve('./controllerPreload.js'),
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -282,10 +324,18 @@ window.__setScrollshotProgress = (progress) => {
   meta.textContent = '已捕获 ' + frameCount + ' 帧';
 };
 document.querySelector('[data-action="finish"]').addEventListener('click', () => {
-  window.location.href = 'scrollshot://finish';
+  if (window.scrollshotController) {
+    window.scrollshotController.finish();
+  } else {
+    window.location.href = 'scrollshot://finish';
+  }
 });
 document.querySelector('[data-action="cancel"]').addEventListener('click', () => {
-  window.location.href = 'scrollshot://cancel';
+  if (window.scrollshotController) {
+    window.scrollshotController.cancel();
+  } else {
+    window.location.href = 'scrollshot://cancel';
+  }
 });
 </script>
 </body>

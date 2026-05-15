@@ -291,6 +291,24 @@ async function runInElectron() {
     throw new Error(`Long screenshot smoke failed: ${failure.message}`);
   }
   if (!outputBuffer) {
+    writeFileSync(
+      join(outDir, 'failure.json'),
+      JSON.stringify(
+        {
+          message: 'Long screenshot smoke did not produce an output buffer',
+          scrollStates,
+          controllerShown: Boolean(controllerWindow),
+          controllerDestroyed:
+            controllerWindow && typeof controllerWindow.isDestroyed === 'function'
+              ? controllerWindow.isDestroyed()
+              : undefined,
+          finishedWithController,
+          hasSession: Boolean(screenshots.longScreenshotSession),
+        },
+        null,
+        2,
+      ),
+    );
     throw new Error('Long screenshot smoke did not produce an output buffer');
   }
 
