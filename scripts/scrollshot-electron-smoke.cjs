@@ -229,6 +229,7 @@ async function runInElectron() {
     longScreenshotMode: 'manual',
   });
   let outputBuffer = null;
+  let outputData = null;
   let outputPlan = null;
   let failure = null;
   let controllerWindow = null;
@@ -239,10 +240,12 @@ async function runInElectron() {
   screenshots.on('ok', (_event, buffer, data) => {
     if (data?.longScreenshot) {
       outputBuffer = buffer;
+      outputData = data;
     }
   });
-  screenshots.on('longScreenshot', (_event, buffer, _data, plan) => {
+  screenshots.on('longScreenshot', (_event, buffer, data, plan) => {
     outputBuffer = buffer;
+    outputData = data;
     outputPlan = plan;
   });
   screenshots.on('longScreenshotFailed', (_event, _data, message, warnings, plan) => {
@@ -357,6 +360,7 @@ async function runInElectron() {
     controllerShown: Boolean(controllerWindow),
     finishedWithController,
     usedDomClickFallback,
+    scrollMethods: outputData?.longScreenshotScrollMethods,
   };
   writeFileSync(join(outDir, 'result.json'), JSON.stringify(result, null, 2));
 
@@ -544,6 +548,7 @@ async function runAutomaticExternalSmoke({
     longScreenshotMode: 'automatic',
   });
   let outputBuffer = null;
+  let outputData = null;
   let outputPlan = null;
   let failure = null;
   let usedDomClickFallback = false;
@@ -563,10 +568,12 @@ async function runAutomaticExternalSmoke({
     screenshots.on('ok', (_event, buffer, data) => {
       if (data?.longScreenshot) {
         outputBuffer = buffer;
+        outputData = data;
       }
     });
-    screenshots.on('longScreenshot', (_event, buffer, _data, plan) => {
+    screenshots.on('longScreenshot', (_event, buffer, data, plan) => {
       outputBuffer = buffer;
+      outputData = data;
       outputPlan = plan;
     });
     screenshots.on('longScreenshotFailed', (_event, _data, message, warnings, plan) => {
@@ -648,6 +655,7 @@ async function runAutomaticExternalSmoke({
       plan: outputPlan,
       platform: process.platform,
       usedDomClickFallback,
+      scrollMethods: outputData?.longScreenshotScrollMethods,
     };
     writeFileSync(
       join(externalAutoOutDir, 'result.json'),

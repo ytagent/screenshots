@@ -19,6 +19,7 @@ export interface ScreenshotsData {
   bounds: Bounds;
   display: Display;
   longScreenshot?: boolean;
+  longScreenshotScrollMethods?: string[];
 }
 
 const map = new Map<ScreenshotsListener, Record<string, IpcRendererListener>>();

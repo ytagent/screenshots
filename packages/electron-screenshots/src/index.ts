@@ -467,6 +467,7 @@ export default class Screenshots extends Events {
     let captureBusy = false;
     let frameTimer: ReturnType<typeof setInterval> | null = null;
     const registeredAccelerators: string[] = [];
+    const automaticScrollMethods = new Set<string>();
     const mode = this.longScreenshotMode;
     const autoScrollStep = Math.max(
       120,
@@ -622,6 +623,7 @@ export default class Screenshots extends Events {
         const okData: ScreenshotsData = {
           ...data,
           longScreenshot: true,
+          longScreenshotScrollMethods: [...automaticScrollMethods],
         };
         const event = new Event();
         this.emit('ok', event, buffer, okData);
@@ -688,6 +690,7 @@ export default class Screenshots extends Events {
           }
           return false;
         }
+        automaticScrollMethods.add(result.method);
 
         await delay(autoSettleMs);
         await captureFrame();

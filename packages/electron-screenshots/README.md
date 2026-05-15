@@ -195,6 +195,7 @@ export interface ScreenshotsData {
   bounds: Bounds;
   display: Display;
   longScreenshot?: boolean;
+  longScreenshotScrollMethods?: string[];
 }
 
 class Event {

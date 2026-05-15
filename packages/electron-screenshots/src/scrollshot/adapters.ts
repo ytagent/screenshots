@@ -99,8 +99,79 @@ export class WindowsScrollAdapter implements ScrollshotScrollAdapter {
     display?: ScreenshotsData['display'],
   ): Promise<PlatformScrollResult> {
     const point = getCenterScreenPoint(bounds, display);
-    const wheelDelta = deltaY >= 0 ? -wheelTicks(deltaY) : wheelTicks(deltaY);
-    const script = `
+    const automationResult = await scrollWithWindowsAutomation(point, deltaY);
+    if (automationResult.ok) {
+      return automationResult;
+    }
+    const wheelResult = await scrollWithWindowsWheel(point, deltaY);
+    if (wheelResult.ok) {
+      return wheelResult;
+    }
+    return {
+      ok: false,
+      method: `${automationResult.method} -> ${wheelResult.method}`,
+      reason: [automationResult.reason, wheelResult.reason]
+        .filter(Boolean)
+        .join('\n'),
+    };
+  }
+}
+
+async function scrollWithWindowsAutomation(
+  point: { x: number; y: number },
+  deltaY: number,
+): Promise<PlatformScrollResult> {
+  const verticalAmount =
+    deltaY >= 0
+      ? '[System.Windows.Automation.ScrollAmount]::LargeIncrement'
+      : '[System.Windows.Automation.ScrollAmount]::LargeDecrement';
+  const script = `
+Add-Type -AssemblyName WindowsBase
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+$point = New-Object System.Windows.Point(${point.x}, ${point.y})
+$element = [System.Windows.Automation.AutomationElement]::FromPoint($point)
+$walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
+while ($null -ne $element) {
+  $pattern = $null
+  if ($element.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref]$pattern)) {
+    $pattern.Scroll([System.Windows.Automation.ScrollAmount]::NoAmount, ${verticalAmount})
+    exit 0
+  }
+  $element = $walker.GetParent($element)
+}
+Write-Error "No UI Automation ScrollPattern was found at ${point.x},${point.y}"
+exit 2
+`;
+  try {
+    await runCommand(
+      'powershell.exe',
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-Command',
+        script,
+      ],
+      2500,
+    );
+    return { ok: true, method: 'windows-uia-scroll-pattern' };
+  } catch (err) {
+    return {
+      ok: false,
+      method: 'windows-uia-scroll-pattern',
+      reason: errorMessage(err),
+    };
+  }
+}
+
+async function scrollWithWindowsWheel(
+  point: { x: number; y: number },
+  deltaY: number,
+): Promise<PlatformScrollResult> {
+  const wheelDelta = deltaY >= 0 ? -wheelTicks(deltaY) : wheelTicks(deltaY);
+  const script = `
 Add-Type -Namespace Win32 -Name NativeMethods -MemberDefinition @'
 [System.Runtime.InteropServices.DllImport("user32.dll")]
 public static extern bool SetCursorPos(int X, int Y);
@@ -111,27 +182,26 @@ public static extern void mouse_event(uint dwFlags, uint dx, uint dy, int dwData
 Start-Sleep -Milliseconds 20
 [Win32.NativeMethods]::mouse_event(0x0800, 0, 0, ${wheelDelta}, [System.UIntPtr]::Zero)
 `;
-    try {
-      await runCommand(
-        'powershell.exe',
-        [
-          '-NoProfile',
-          '-NonInteractive',
-          '-ExecutionPolicy',
-          'Bypass',
-          '-Command',
-          script,
-        ],
-        2500,
-      );
-      return { ok: true, method: 'windows-mouse-wheel' };
-    } catch (err) {
-      return {
-        ok: false,
-        method: 'windows-mouse-wheel',
-        reason: errorMessage(err),
-      };
-    }
+  try {
+    await runCommand(
+      'powershell.exe',
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-Command',
+        script,
+      ],
+      2500,
+    );
+    return { ok: true, method: 'windows-mouse-wheel' };
+  } catch (err) {
+    return {
+      ok: false,
+      method: 'windows-mouse-wheel',
+      reason: errorMessage(err),
+    };
   }
 }
 

@@ -33,7 +33,7 @@
   - External automatic wheel scrolling adapter boundary for OS-level targets.
   - Electron controlled-content capture and scroll adapter for pages owned by the app.
   - NativeImage conversion and platform adapter implementations/scaffolding.
-  - Windows external wheel fallback implemented behind `WindowsScrollAdapter`; UI Automation `ScrollPattern` remains the next higher-confidence Windows adapter.
+  - Windows `WindowsScrollAdapter` tries UI Automation `ScrollPattern` first, then falls back to the verified wheel input path.
   - macOS Accessibility wheel adapter is isolated but treated as permission-blocked until verified on a macOS runner with Accessibility privileges.
 
 - `react-screenshots`
@@ -107,7 +107,7 @@ Fixtures currently include:
 
 ## Platform Notes
 
-Windows is verified in CI for the deterministic core eval, the real Electron toolbar/manual flow, the controlled Electron automatic flow, and the external automatic wheel fallback flow. The next Windows improvement is a UI Automation `ScrollPattern` adapter before falling back to wheel input.
+Windows is verified in CI for the deterministic core eval, the real Electron toolbar/manual flow, the controlled Electron automatic flow, and the external automatic OS-level flow. The Windows adapter attempts UI Automation `ScrollPattern` first and falls back to wheel input when the selected target does not expose a scroll pattern.
 
 macOS is verified in CI for the deterministic core eval, the real Electron toolbar/manual flow, and the controlled Electron automatic flow. OS-level external-window automatic scrolling is not claimed as complete because Accessibility scrolling requires runtime permission that the current CI runner does not grant to this app. Future macOS work must implement and verify ScreenCaptureKit capture and Accessibility scrolling after permissions are available on real macOS.
 
@@ -121,8 +121,8 @@ Reference docs used while designing the adapters:
 
 ## Known Gaps
 
-- Automatic OS-level external-window scrolling is scaffolded, not complete.
-- Windows UI Automation `ScrollPattern` target scrolling is not implemented; Windows currently uses the wheel fallback.
+- Automatic OS-level external-window scrolling remains platform-dependent: the Windows path is verified, while macOS and Linux still have runtime permission/tooling gaps.
+- Windows UI Automation `ScrollPattern` may not be available for every selected target; the verified fallback is wheel input at the selected region center.
 - macOS ScreenCaptureKit capture and verified Accessibility scrolling are not implemented.
 - Linux external automatic mode requires `xdotool`; CI records this path as skipped unless that runtime is available.
 - Full-screen or near-full-screen selections may not have room for the non-captured controller; those sessions use the keyboard fallback.

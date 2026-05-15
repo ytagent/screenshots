@@ -2,10 +2,10 @@
 
 ## Highest Priority
 
-1. Improve Windows external-window automatic scrolling beyond the current wheel fallback:
+1. Improve Windows external-window automatic scrolling beyond the current UI Automation + wheel fallback:
    - locate the scrollable target under selected bounds;
-   - try UI Automation `ScrollPattern`;
-   - fall back to the implemented wheel input path;
+   - add richer diagnostics when UI Automation `ScrollPattern` is unavailable;
+   - keep the implemented wheel input path as fallback;
    - report platform limitation when neither path is available.
 2. Improve manual UX:
    - add a tray/menu-bar fallback for full-screen selections where no non-captured controller can fit;
