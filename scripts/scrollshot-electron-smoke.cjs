@@ -511,7 +511,7 @@ async function runAutomaticControlledSmoke({
     target.focus();
     await delay(500);
 
-    const expected = await captureFullPage(target);
+    const expected = await captureFullPage(target, { width });
     writeFileSync(join(autoOutDir, 'expected.png'), expected);
 
     const adapter = new ElectronControlledContentAdapter(target.webContents, {
@@ -652,7 +652,7 @@ async function runAutomaticExternalSmoke({
     target.focus();
     await delay(700);
 
-    const expected = await captureFullPage(target);
+    const expected = await captureFullPage(target, { width });
     writeFileSync(join(externalAutoOutDir, 'expected.png'), expected);
 
     screenshots.on('ok', (_event, buffer, data) => {
@@ -1124,7 +1124,7 @@ function hasUntrustedAccessibility(value) {
   return Object.values(value).some((child) => hasUntrustedAccessibility(child));
 }
 
-async function captureFullPage(target) {
+async function captureFullPage(target, { width = 460 } = {}) {
   const debuggerApi = target.webContents.debugger;
   if (!debuggerApi.isAttached()) {
     debuggerApi.attach('1.3');
@@ -1139,7 +1139,7 @@ async function captureFullPage(target) {
     clip: {
       x: 0,
       y: 0,
-      width: 460,
+      width,
       height: Math.ceil(contentSize.height),
       scale: 1,
     },
