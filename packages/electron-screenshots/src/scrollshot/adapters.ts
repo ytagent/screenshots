@@ -580,6 +580,13 @@ JSON.stringify({
     };
   } catch (err) {
     const commandFailure = commandFailureDetails(err);
+    const diagnosticOutput = [
+      commandFailure?.stdout,
+      commandFailure?.stderr,
+      errorMessage(err),
+    ]
+      .filter(Boolean)
+      .join('\n');
     return {
       ok: false,
       method: 'macos-ax-scroll-action',
@@ -590,7 +597,7 @@ JSON.stringify({
         accessibility,
         action,
         repeatCount,
-        ...parseCommandJson(commandFailure?.stdout),
+        ...parseCommandJson(diagnosticOutput),
         stderr: commandFailure?.stderr,
         code: commandFailure?.code,
         signal: commandFailure?.signal,
