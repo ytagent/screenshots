@@ -609,10 +609,14 @@ async function runAutomaticExternalSmoke({
     return;
   }
 
-  const x = display.bounds.x + 160;
-  const y = display.bounds.y + 120;
   const width = 460;
   const height = 480;
+  const targetXOffset =
+    process.platform === 'darwin'
+      ? Math.max(40, display.bounds.width - width - 24)
+      : 160;
+  const x = display.bounds.x + targetXOffset;
+  const y = display.bounds.y + 120;
   const target = new BrowserWindow({
     x,
     y,
@@ -620,6 +624,7 @@ async function runAutomaticExternalSmoke({
     height,
     frame: false,
     show: true,
+    alwaysOnTop: process.platform === 'darwin',
     resizable: false,
     movable: false,
     webPreferences: {
