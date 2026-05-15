@@ -49,6 +49,7 @@ export interface StitchOptions extends OverlapOptions {
   duplicateDeltaThreshold?: number;
   duplicateConfidenceThreshold?: number;
   duplicateFrameScoreThreshold?: number;
+  transientFrameDeltaThreshold?: number;
   minConfidence?: number;
 }
 
@@ -61,6 +62,7 @@ export interface StitchPlanFrame {
   overlapRows: number;
   confidence: number;
   discardedDuplicate?: boolean;
+  discardedTransient?: boolean;
   warnings: string[];
 }
 
@@ -68,6 +70,7 @@ export interface StitchPlan {
   frameCount: number;
   acceptedFrameCount: number;
   discardedDuplicateFrames: number[];
+  discardedTransientFrames: number[];
   width: number;
   height: number;
   deviceScaleFactor?: number;

@@ -123,8 +123,12 @@ async function scrollWithWindowsAutomation(
 ): Promise<PlatformScrollResult> {
   const verticalAmount =
     deltaY >= 0
-      ? '[System.Windows.Automation.ScrollAmount]::LargeIncrement'
-      : '[System.Windows.Automation.ScrollAmount]::LargeDecrement';
+      ? '[System.Windows.Automation.ScrollAmount]::SmallIncrement'
+      : '[System.Windows.Automation.ScrollAmount]::SmallDecrement';
+  const repeatCount = Math.max(
+    1,
+    Math.min(12, Math.round(Math.abs(deltaY) / 40)),
+  );
   const script = `
 Add-Type -AssemblyName WindowsBase
 Add-Type -AssemblyName UIAutomationClient
@@ -135,7 +139,10 @@ $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
 while ($null -ne $element) {
   $pattern = $null
   if ($element.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref]$pattern)) {
-    $pattern.Scroll([System.Windows.Automation.ScrollAmount]::NoAmount, ${verticalAmount})
+    for ($i = 0; $i -lt ${repeatCount}; $i++) {
+      $pattern.Scroll([System.Windows.Automation.ScrollAmount]::NoAmount, ${verticalAmount})
+      Start-Sleep -Milliseconds 20
+    }
     exit 0
   }
   $element = $walker.GetParent($element)

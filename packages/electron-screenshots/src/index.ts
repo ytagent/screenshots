@@ -590,6 +590,10 @@ export default class Screenshots extends Events {
           minOverlapRatio: 0.16,
           maxOverlapRatio: 0.96,
           minScrollDelta: 3,
+          transientFrameDeltaThreshold: Math.max(
+            24,
+            Math.round(data.bounds.height * 0.14),
+          ),
           minConfidence: 0.68,
           sampleColumns: 64,
           sampleRows: 220,

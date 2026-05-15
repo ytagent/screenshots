@@ -130,6 +130,10 @@ export function stitchFrames(
     options.duplicateConfidenceThreshold ?? 0.985;
   const duplicateFrameScoreThreshold =
     options.duplicateFrameScoreThreshold ?? 0.002;
+  const transientFrameDeltaThreshold = Math.max(
+    0,
+    options.transientFrameDeltaThreshold ?? 0,
+  );
   const minConfidence = options.minConfidence ?? 0.92;
 
   const planFrames: StitchPlanFrame[] = [
@@ -146,6 +150,7 @@ export function stitchFrames(
   ];
   const warnings: string[] = [];
   const discardedDuplicateFrames: number[] = [];
+  const discardedTransientFrames: number[] = [];
   const estimatedOffsets: number[] = [0];
   const seamRows: number[] = [];
   let outputHeight = firstFrame.image.height;
@@ -204,6 +209,28 @@ export function stitchFrames(
       continue;
     }
 
+    const isTransient =
+      transientFrameDeltaThreshold > 0 &&
+      match.deltaY > duplicateDeltaThreshold &&
+      match.deltaY <= transientFrameDeltaThreshold &&
+      match.confidence < minConfidence;
+
+    if (isTransient) {
+      discardedTransientFrames.push(index);
+      planFrames.push({
+        inputIndex: index,
+        outputY: outputHeight,
+        sourceY: 0,
+        rows: 0,
+        deltaY: match.deltaY,
+        overlapRows: match.overlapRows,
+        confidence: match.confidence,
+        discardedTransient: true,
+        warnings: ["transient low-confidence frame discarded"],
+      });
+      continue;
+    }
+
     if (match.confidence < minConfidence) {
       frameWarnings.push(
         `low overlap confidence ${match.confidence.toFixed(4)} for frame ${index}`,
@@ -244,7 +271,11 @@ export function stitchFrames(
 
   const output = createPixelImage(firstFrame.image.width, outputHeight);
   for (const framePlan of planFrames) {
-    if (framePlan.rows <= 0 || framePlan.discardedDuplicate) {
+    if (
+      framePlan.rows <= 0 ||
+      framePlan.discardedDuplicate ||
+      framePlan.discardedTransient
+    ) {
       continue;
     }
     const sourceFrame = frames[framePlan.inputIndex];
@@ -262,8 +293,12 @@ export function stitchFrames(
 
   const plan: StitchPlan = {
     frameCount: frames.length,
-    acceptedFrameCount: frames.length - discardedDuplicateFrames.length,
+    acceptedFrameCount:
+      frames.length -
+      discardedDuplicateFrames.length -
+      discardedTransientFrames.length,
     discardedDuplicateFrames,
+    discardedTransientFrames,
     width: output.width,
     height: output.height,
     stickyHeaderRows,
