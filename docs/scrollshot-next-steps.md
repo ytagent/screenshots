@@ -2,11 +2,11 @@
 
 ## Highest Priority
 
-1. Verify macOS external-window automatic scrolling in a real signed/permissioned desktop environment:
+1. Broaden macOS external-window automatic scrolling verification beyond the hosted Electron smoke target:
    - grant Accessibility input control to the host app or signed test helper;
-   - verify the trusted Accessibility action or CoreGraphics scroll event actually moves the selected target region;
+   - verify the trusted Accessibility action or CoreGraphics scroll event moves native third-party scroll views, not only the CI Electron fixture;
    - keep the ScreenCaptureKit `SCShareableContent` probe in the smoke artifact;
-   - require a correct stitched output when Accessibility permission is available;
+   - require a correct stitched output when Accessibility permission is available and no system prompt overlaps the selected region;
    - keep hosted-runner skips only for explicit environment blocks such as missing Accessibility trust, system dialog interception, or accepted Accessibility/CoreGraphics scroll attempts that do not move the target.
 2. Improve manual UX:
    - consider a tray icon fallback for environments where the app-menu fallback is not reachable;
@@ -19,7 +19,7 @@
    - toolbar/manual flow writes `artifacts/latest/electron-smoke/`;
    - toolbar/manual flow verifies the non-captured controller can finish the session;
    - Windows external automatic wheel flow writes `artifacts/latest/electron-external-auto-smoke/`;
-   - macOS external automatic smoke records ScreenCaptureKit, Accessibility action, and CoreGraphics event diagnostics, and only skips when the hosted runner exposes a diagnosed environment block;
+   - macOS external automatic smoke records ScreenCaptureKit, Accessibility action, and CoreGraphics event diagnostics, and must pass unless the hosted runner exposes a diagnosed environment block;
    - controlled Electron automatic flow writes `artifacts/latest/electron-auto-smoke/`;
    - Linux runs under Xvfb and Windows/macOS run on real hosted desktop sessions.
 
