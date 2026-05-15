@@ -29,7 +29,10 @@ import {
   type LongScreenshotControllerHandle,
   type LongScreenshotProgress,
 } from './scrollshot/controller.js';
-import { createPlatformScrollAdapter } from './scrollshot/adapters.js';
+import {
+  createPlatformScrollAdapter,
+  type PlatformScrollResult,
+} from './scrollshot/adapters.js';
 import {
   cropNativeImageByDipBounds,
   nativeImageToPixelImage,
@@ -471,12 +474,41 @@ export default class Screenshots extends Events {
     let frameTimer: ReturnType<typeof setInterval> | null = null;
     const registeredAccelerators: string[] = [];
     const automaticScrollMethods = new Set<string>();
+    const automaticScrollDiagnostics: Record<string, unknown>[] = [];
+    const automaticScrollDiagnosticKeys = new Set<string>();
     const mode = this.longScreenshotMode;
     const autoScrollStep = Math.max(
       120,
       Math.min(360, Math.round(data.bounds.height * 0.55)),
     );
     const autoSettleMs = 420;
+    data.longScreenshotScrollDiagnostics = automaticScrollDiagnostics;
+
+    const recordAutomaticScrollResult = (
+      result: PlatformScrollResult,
+      attemptIndex: number,
+    ) => {
+      if (!result.diagnostics) {
+        return;
+      }
+      const key = `${result.method}:${result.ok}`;
+      if (result.ok && automaticScrollDiagnosticKeys.has(key)) {
+        return;
+      }
+      if (result.ok) {
+        automaticScrollDiagnosticKeys.add(key);
+      }
+      if (automaticScrollDiagnostics.length >= 24 && result.ok) {
+        return;
+      }
+      automaticScrollDiagnostics.push({
+        attemptIndex,
+        method: result.method,
+        ok: result.ok,
+        reason: result.reason,
+        ...result.diagnostics,
+      });
+    };
 
     const cleanup = () => {
       if (frameTimer) {
@@ -631,6 +663,7 @@ export default class Screenshots extends Events {
           ...data,
           longScreenshot: true,
           longScreenshotScrollMethods: [...automaticScrollMethods],
+          longScreenshotScrollDiagnostics: automaticScrollDiagnostics,
         };
         const event = new Event();
         this.emit('ok', event, buffer, okData);
@@ -686,6 +719,7 @@ export default class Screenshots extends Events {
           autoScrollStep,
           data.display,
         );
+        recordAutomaticScrollResult(result, index);
         if (!result.ok) {
           const message = `automatic external scrolling unavailable via ${
             result.method

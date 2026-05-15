@@ -8,6 +8,8 @@ interface ScreenshotsData {
   bounds: Bounds;
   display: Display;
   longScreenshot?: boolean;
+  longScreenshotScrollMethods?: string[];
+  longScreenshotScrollDiagnostics?: Record<string, unknown>[];
 }
 
 interface GlobalScreenshots {

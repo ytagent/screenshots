@@ -1,4 +1,4 @@
-const { spawn } = require('node:child_process');
+const { execFile, spawn } = require('node:child_process');
 const { mkdirSync, writeFileSync } = require('node:fs');
 const { join, resolve } = require('node:path');
 const { deflateSync } = require('node:zlib');
@@ -386,6 +386,7 @@ async function runInElectron() {
     finishedWithController,
     usedDomClickFallback,
     scrollMethods: outputData?.longScreenshotScrollMethods,
+    scrollDiagnostics: outputData?.longScreenshotScrollDiagnostics,
   };
   writeFileSync(join(outDir, 'result.json'), JSON.stringify(result, null, 2));
 
@@ -586,7 +587,11 @@ async function runAutomaticExternalSmoke({
   Screenshots,
 }) {
   mkdirSync(externalAutoOutDir, { recursive: true });
-  if (process.platform !== 'win32') {
+  const macOSScreenCaptureKitProbe =
+    process.platform === 'darwin'
+      ? await runMacOSScreenCaptureKitProbe()
+      : undefined;
+  if (process.platform !== 'win32' && process.platform !== 'darwin') {
     writeFileSync(
       join(externalAutoOutDir, 'result.json'),
       JSON.stringify(
@@ -594,7 +599,7 @@ async function runAutomaticExternalSmoke({
           passed: true,
           skipped: true,
           reason:
-            'External automatic OS scrolling smoke is enforced on Windows. macOS requires Accessibility permission and Linux requires xdotool in the runner.',
+            'External automatic OS scrolling smoke is enforced on Windows. macOS is probed separately for ScreenCaptureKit and Accessibility; Linux requires xdotool in the runner.',
           platform: process.platform,
         },
         null,
@@ -656,8 +661,13 @@ async function runAutomaticExternalSmoke({
       outputData = data;
       outputPlan = plan;
     });
-    screenshots.on('longScreenshotFailed', (_event, _data, message, warnings, plan) => {
-      failure = { message, warnings, plan };
+    screenshots.on('longScreenshotFailed', (_event, data, message, warnings, plan) => {
+      failure = {
+        message,
+        warnings,
+        plan,
+        scrollDiagnostics: data?.longScreenshotScrollDiagnostics,
+      };
     });
 
     await screenshots.startCapture();
@@ -684,6 +694,29 @@ async function runAutomaticExternalSmoke({
         join(externalAutoOutDir, 'failure.json'),
         JSON.stringify(failure, null, 2),
       );
+      if (
+        process.platform === 'darwin' &&
+        isMacOSAccessibilityPermissionBlock(failure)
+      ) {
+        writeFileSync(
+          join(externalAutoOutDir, 'result.json'),
+          JSON.stringify(
+            {
+              passed: true,
+              skipped: true,
+              platform: process.platform,
+              reason:
+                'macOS external automatic scrolling could not be verified because the runner process is not trusted for Accessibility input control.',
+              failure,
+              screenCaptureKitProbe: macOSScreenCaptureKitProbe,
+              usedDomClickFallback,
+            },
+            null,
+            2,
+          ),
+        );
+        return;
+      }
       throw new Error(
         `External automatic scrollshot smoke failed: ${failure.message}`,
       );
@@ -697,6 +730,7 @@ async function runAutomaticExternalSmoke({
               'External automatic scrollshot smoke did not produce an output buffer',
             hasSession: Boolean(screenshots.longScreenshotSession),
             usedDomClickFallback,
+            screenCaptureKitProbe: macOSScreenCaptureKitProbe,
           },
           null,
           2,
@@ -736,6 +770,8 @@ async function runAutomaticExternalSmoke({
       platform: process.platform,
       usedDomClickFallback,
       scrollMethods: outputData?.longScreenshotScrollMethods,
+      scrollDiagnostics: outputData?.longScreenshotScrollDiagnostics,
+      screenCaptureKitProbe: macOSScreenCaptureKitProbe,
     };
     writeFileSync(
       join(externalAutoOutDir, 'result.json'),
@@ -754,6 +790,102 @@ async function runAutomaticExternalSmoke({
     await screenshots.endCapture();
     target.destroy();
   }
+}
+
+async function runMacOSScreenCaptureKitProbe() {
+  if (process.platform !== 'darwin') {
+    return undefined;
+  }
+
+  try {
+    const output = await execFileText(
+      '/usr/bin/swift',
+      [join(rootDir, 'scripts', 'macos-screencapturekit-probe.swift')],
+      15000,
+    );
+    return {
+      ...parseJsonObject(output.stdout),
+      stderr: output.stderr.trim() || undefined,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      api: 'ScreenCaptureKit',
+      message: error instanceof Error ? error.message : String(error),
+      stdout:
+        error && typeof error === 'object' && 'stdout' in error
+          ? String(error.stdout)
+          : undefined,
+      stderr:
+        error && typeof error === 'object' && 'stderr' in error
+          ? String(error.stderr)
+          : undefined,
+    };
+  }
+}
+
+function execFileText(file, args, timeoutMs) {
+  return new Promise((resolveExec, rejectExec) => {
+    execFile(
+      file,
+      args,
+      {
+        timeout: timeoutMs,
+      },
+      (error, stdout, stderr) => {
+        if (error) {
+          error.stdout = stdout?.toString() ?? '';
+          error.stderr = stderr?.toString() ?? '';
+          rejectExec(error);
+          return;
+        }
+        resolveExec({
+          stdout: stdout?.toString() ?? '',
+          stderr: stderr?.toString() ?? '',
+        });
+      },
+    );
+  });
+}
+
+function parseJsonObject(stdout) {
+  const text = String(stdout ?? '').trim();
+  if (!text) {
+    return {};
+  }
+  try {
+    const parsed = JSON.parse(text);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed
+      : { value: parsed };
+  } catch {
+    const jsonLine = text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .reverse()
+      .find((line) => line.startsWith('{') && line.endsWith('}'));
+    if (!jsonLine) {
+      return { stdout: text };
+    }
+    try {
+      const parsed = JSON.parse(jsonLine);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? parsed
+        : { value: parsed };
+    } catch {
+      return { stdout: text };
+    }
+  }
+}
+
+function isMacOSAccessibilityPermissionBlock(failure) {
+  const text = JSON.stringify(failure).toLowerCase();
+  return (
+    text.includes('accessibility') ||
+    text.includes('axisprocesstrusted') ||
+    text.includes('assistive access') ||
+    text.includes('not trusted')
+  );
 }
 
 async function captureFullPage(target) {
