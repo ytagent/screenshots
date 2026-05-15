@@ -287,83 +287,89 @@ export default class Screenshots extends Events {
   private async captureNativeImage(display: Display): Promise<NativeImage> {
     this.logger('SCREENSHOTS:capture');
 
-    try {
-      const { Monitor } = await import('node-screenshots');
-      let point = {
-        x: display.x + display.width / 2,
-        y: display.y + display.height / 2,
-      };
-      if (process.platform === 'win32') {
-        point = screen.screenToDipPoint(point);
-      }
-      const monitor = Monitor.fromPoint(point.x, point.y);
-      this.logger(
-        'SCREENSHOTS:capture Monitor.fromPoint arguments %o',
-        display,
-      );
-      this.logger('SCREENSHOTS:capture Monitor.fromPoint return %o', {
-        id: monitor?.id,
-        name: monitor?.name,
-        x: monitor?.x,
-        y: monitor?.y,
-        width: monitor?.width,
-        height: monitor?.height,
-        rotation: monitor?.rotation,
-        scaleFactor: monitor?.scaleFactor,
-        frequency: monitor?.frequency,
-        isPrimary: monitor?.isPrimary,
-      });
+    const forceDesktopCapturer =
+      process.env.SCREENSHOTS_CAPTURE_BACKEND === 'desktop-capturer';
 
-      if (!monitor) {
-        throw new Error(`Monitor.fromDisplay(${display.id}) get null`);
-      }
-
-      const image = await withTimeout(
-        monitor.captureImage(),
-        4000,
-        'node-screenshots capture timed out',
-      );
-      const buffer = await image.toPng(true);
-      return nativeImage.createFromBuffer(buffer);
-    } catch (err) {
-      this.logger('SCREENSHOTS:capture Monitor capture() error %o', err);
-      const sources = await withTimeout(
-        desktopCapturer.getSources({
-          types: ['screen'],
-          thumbnailSize: {
-            width: display.width * display.scaleFactor,
-            height: display.height * display.scaleFactor,
-          },
-        }),
-        4000,
-        'desktopCapturer capture timed out',
-      );
-
-      let source: DesktopCapturerSource | undefined;
-      // Linux系统上，screen.getDisplayNearestPoint 返回的 Display 对象的 id
-      // 和这里 source 对象上的 display_id(Linux上，这个值是空字符串) 或 id 的中间部分，都不一致
-      // 但是，如果只有一个显示器的话，其实不用判断，直接返回就行
-      if (sources.length === 1) {
-        [source] = sources;
-      } else {
-        source = sources.find(
-          (item) =>
-            item.display_id === display.id.toString() ||
-            item.id.startsWith(`screen:${display.id}:`),
-        );
-      }
-
-      if (!source) {
+    if (!forceDesktopCapturer) {
+      try {
+        const { Monitor } = await import('node-screenshots');
+        let point = {
+          x: display.x + display.width / 2,
+          y: display.y + display.height / 2,
+        };
+        if (process.platform === 'win32') {
+          point = screen.screenToDipPoint(point);
+        }
+        const monitor = Monitor.fromPoint(point.x, point.y);
         this.logger(
-          "SCREENSHOTS:capture Can't find screen source. sources: %o, display: %o",
-          sources,
+          'SCREENSHOTS:capture Monitor.fromPoint arguments %o',
           display,
         );
-        throw new Error("Can't find screen source");
-      }
+        this.logger('SCREENSHOTS:capture Monitor.fromPoint return %o', {
+          id: monitor?.id,
+          name: monitor?.name,
+          x: monitor?.x,
+          y: monitor?.y,
+          width: monitor?.width,
+          height: monitor?.height,
+          rotation: monitor?.rotation,
+          scaleFactor: monitor?.scaleFactor,
+          frequency: monitor?.frequency,
+          isPrimary: monitor?.isPrimary,
+        });
 
-      return source.thumbnail;
+        if (!monitor) {
+          throw new Error(`Monitor.fromDisplay(${display.id}) get null`);
+        }
+
+        const image = await withTimeout(
+          monitor.captureImage(),
+          4000,
+          'node-screenshots capture timed out',
+        );
+        const buffer = await image.toPng(true);
+        return nativeImage.createFromBuffer(buffer);
+      } catch (err) {
+        this.logger('SCREENSHOTS:capture Monitor capture() error %o', err);
+      }
     }
+
+    const sources = await withTimeout(
+      desktopCapturer.getSources({
+        types: ['screen'],
+        thumbnailSize: {
+          width: display.width * display.scaleFactor,
+          height: display.height * display.scaleFactor,
+        },
+      }),
+      4000,
+      'desktopCapturer capture timed out',
+    );
+
+    let source: DesktopCapturerSource | undefined;
+    // Linux系统上，screen.getDisplayNearestPoint 返回的 Display 对象的 id
+    // 和这里 source 对象上的 display_id(Linux上，这个值是空字符串) 或 id 的中间部分，都不一致
+    // 但是，如果只有一个显示器的话，其实不用判断，直接返回就行
+    if (sources.length === 1) {
+      [source] = sources;
+    } else {
+      source = sources.find(
+        (item) =>
+          item.display_id === display.id.toString() ||
+          item.id.startsWith(`screen:${display.id}:`),
+      );
+    }
+
+    if (!source) {
+      this.logger(
+        "SCREENSHOTS:capture Can't find screen source. sources: %o, display: %o",
+        sources,
+        display,
+      );
+      throw new Error("Can't find screen source");
+    }
+
+    return source.thumbnail;
   }
 
   private sendLongScreenshotProgress(progress: {

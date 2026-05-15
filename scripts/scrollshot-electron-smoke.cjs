@@ -59,6 +59,21 @@ function delay(ms) {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, ms));
 }
 
+function writeSmokeError(error) {
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(
+    join(outDir, 'error.json'),
+    JSON.stringify(
+      {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+      null,
+      2,
+    ),
+  );
+}
+
 function buildFixtureHtml() {
   return `<!doctype html>
 <html>
@@ -129,7 +144,9 @@ async function runInElectron() {
   const electron = require('electron');
   const { app, BrowserWindow, nativeImage, screen } = electron;
   const hardTimeout = setTimeout(() => {
-    console.error('Electron scrollshot smoke timed out');
+    const error = new Error('Electron scrollshot smoke timed out');
+    writeSmokeError(error);
+    console.error(error);
     app.exit(1);
   }, 90000);
 
@@ -373,6 +390,7 @@ async function clickLongScreenshotButton(webContents) {
 
 if (process.versions.electron) {
   runInElectron().catch((error) => {
+    writeSmokeError(error);
     console.error(error);
     process.exitCode = 1;
     setTimeout(() => process.exit(1), 250);
