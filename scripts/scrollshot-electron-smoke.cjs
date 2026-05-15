@@ -233,6 +233,7 @@ async function runInElectron() {
   let failure = null;
   let controllerWindow = null;
   let finishedWithController = false;
+  let usedDomClickFallback = false;
   const scrollStates = [];
 
   screenshots.on('ok', (_event, buffer, data) => {
@@ -261,6 +262,10 @@ async function runInElectron() {
   });
   await delay(300);
   await clickLongScreenshotButton(screenshots.$view.webContents);
+  usedDomClickFallback = await ensureLongScreenshotStarted(
+    screenshots,
+    screenshots.$view.webContents,
+  );
   await delay(1400);
 
   for (let index = 0; index < 12; index += 1) {
@@ -313,6 +318,7 @@ async function runInElectron() {
               : undefined,
           finishedWithController,
           hasSession: Boolean(screenshots.longScreenshotSession),
+          usedDomClickFallback,
         },
         null,
         2,
@@ -350,6 +356,7 @@ async function runInElectron() {
     scrollStates,
     controllerShown: Boolean(controllerWindow),
     finishedWithController,
+    usedDomClickFallback,
   };
   writeFileSync(join(outDir, 'result.json'), JSON.stringify(result, null, 2));
 
@@ -539,6 +546,7 @@ async function runAutomaticExternalSmoke({
   let outputBuffer = null;
   let outputPlan = null;
   let failure = null;
+  let usedDomClickFallback = false;
 
   try {
     target.removeMenu();
@@ -575,6 +583,10 @@ async function runAutomaticExternalSmoke({
     });
     await delay(300);
     await clickLongScreenshotButton(screenshots.$view.webContents);
+    usedDomClickFallback = await ensureLongScreenshotStarted(
+      screenshots,
+      screenshots.$view.webContents,
+    );
 
     for (let tries = 0; tries < 120 && !outputBuffer && !failure; tries += 1) {
       await delay(250);
@@ -597,6 +609,7 @@ async function runAutomaticExternalSmoke({
             message:
               'External automatic scrollshot smoke did not produce an output buffer',
             hasSession: Boolean(screenshots.longScreenshotSession),
+            usedDomClickFallback,
           },
           null,
           2,
@@ -634,6 +647,7 @@ async function runAutomaticExternalSmoke({
       expected: expectedImage.getSize(),
       plan: outputPlan,
       platform: process.platform,
+      usedDomClickFallback,
     };
     writeFileSync(
       join(externalAutoOutDir, 'result.json'),
@@ -702,7 +716,25 @@ async function dragSelect(webContents, rect) {
   });
 }
 
-async function clickLongScreenshotButton(webContents) {
+async function ensureLongScreenshotStarted(screenshots, webContents) {
+  for (let tries = 0; tries < 8; tries += 1) {
+    if (screenshots.longScreenshotSession) {
+      return false;
+    }
+    await delay(125);
+  }
+
+  await clickLongScreenshotButton(webContents, { domClick: true });
+  for (let tries = 0; tries < 16; tries += 1) {
+    if (screenshots.longScreenshotSession) {
+      return true;
+    }
+    await delay(125);
+  }
+  return true;
+}
+
+async function clickLongScreenshotButton(webContents, options = {}) {
   const buttonRect = await webContents.executeJavaScript(`(() => {
     const icon = document.querySelector('.icon-scrollshot');
     const button = icon?.closest('.screenshots-button');
@@ -715,6 +747,19 @@ async function clickLongScreenshotButton(webContents) {
   })()`);
   if (!buttonRect) {
     throw new Error('Long screenshot toolbar button was not rendered');
+  }
+  if (options.domClick) {
+    const clicked = await webContents.executeJavaScript(`(() => {
+      const icon = document.querySelector('.icon-scrollshot');
+      const button = icon?.closest('.screenshots-button');
+      if (!button) return false;
+      button.click();
+      return true;
+    })()`);
+    if (!clicked) {
+      throw new Error('Long screenshot toolbar DOM click fallback failed');
+    }
+    return;
   }
   webContents.sendInputEvent({
     type: 'mouseDown',
