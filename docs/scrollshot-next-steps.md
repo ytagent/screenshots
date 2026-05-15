@@ -8,8 +8,7 @@
    - fall back to wheel input;
    - report platform limitation when neither path is available.
 2. Improve manual UX:
-   - show a small controller outside the capture rect when possible;
-   - keep Enter/Esc as reliable global fallbacks;
+   - add a tray/menu-bar fallback for full-screen selections where no non-captured controller can fit;
    - surface low-confidence warnings before failing.
 3. Add real macOS external-window automatic scrolling:
    - ScreenCaptureKit capture adapter;
@@ -17,6 +16,7 @@
    - explicit permission failure reporting.
 4. Keep the real desktop GitHub Actions smoke tests green:
    - toolbar/manual flow writes `artifacts/latest/electron-smoke/`;
+   - toolbar/manual flow verifies the non-captured controller can finish the session;
    - controlled Electron automatic flow writes `artifacts/latest/electron-auto-smoke/`;
    - Linux runs under Xvfb and Windows/macOS run on real hosted desktop sessions.
 

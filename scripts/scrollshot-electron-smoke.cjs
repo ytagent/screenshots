@@ -222,6 +222,8 @@ async function runInElectron() {
   let outputBuffer = null;
   let outputPlan = null;
   let failure = null;
+  let controllerWindow = null;
+  let finishedWithController = false;
   const scrollStates = [];
 
   screenshots.on('ok', (_event, buffer, data) => {
@@ -235,6 +237,9 @@ async function runInElectron() {
   });
   screenshots.on('longScreenshotFailed', (_event, _data, message, warnings, plan) => {
     failure = { message, warnings, plan, scrollStates };
+  });
+  screenshots.on('longScreenshotControllerShown', (controller) => {
+    controllerWindow = controller;
   });
 
   await screenshots.startCapture();
@@ -265,7 +270,12 @@ async function runInElectron() {
   }
 
   await delay(850);
-  if (screenshots.longScreenshotSession?.finish) {
+  if (controllerWindow && !controllerWindow.isDestroyed()) {
+    await controllerWindow.webContents.executeJavaScript(
+      `document.querySelector('[data-action="finish"]').click()`,
+    );
+    finishedWithController = true;
+  } else if (screenshots.longScreenshotSession?.finish) {
     await screenshots.longScreenshotSession.finish();
   }
 
@@ -311,6 +321,8 @@ async function runInElectron() {
     expected: expectedImage.getSize(),
     plan: outputPlan,
     scrollStates,
+    controllerShown: Boolean(controllerWindow),
+    finishedWithController,
   };
   writeFileSync(join(outDir, 'result.json'), JSON.stringify(result, null, 2));
 

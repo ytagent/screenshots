@@ -309,5 +309,7 @@
       "scrollTop": 2160,
       "maxScrollTop": 2160
     }
-  ]
+  ],
+  "controllerShown": true,
+  "finishedWithController": true
 }

@@ -20,6 +20,11 @@ import getDisplay, { type Display } from './getDisplay.js';
 import padStart from './padStart.js';
 import type { Bounds, ScreenshotsData } from './preload.js';
 import {
+  createLongScreenshotController,
+  type LongScreenshotControllerHandle,
+  type LongScreenshotProgress,
+} from './scrollshot/controller.js';
+import {
   cropNativeImageByDipBounds,
   nativeImageToPixelImage,
   pixelImageToNativeImage,
@@ -96,6 +101,8 @@ export default class Screenshots extends Events {
     finish: () => Promise<void>;
   } | null = null;
 
+  private longScreenshotController: LongScreenshotControllerHandle | null = null;
+
   private isReady = new Promise<void>((resolve) => {
     ipcMain.once('SCREENSHOTS:ready', () => {
       this.logger('SCREENSHOTS:ready');
@@ -140,6 +147,7 @@ export default class Screenshots extends Events {
     if (this.longScreenshotSession) {
       this.longScreenshotSession.cancel();
     }
+    this.destroyLongScreenshotController();
     await this.reset();
 
     if (!this.$win) {
@@ -372,13 +380,43 @@ export default class Screenshots extends Events {
     return source.thumbnail;
   }
 
-  private sendLongScreenshotProgress(progress: {
-    state: string;
-    message?: string;
-    frameCount?: number;
-    warnings?: string[];
-  }) {
+  private sendLongScreenshotProgress(progress: LongScreenshotProgress) {
     this.$view.webContents.send('SCREENSHOTS:longScreenshot-progress', progress);
+    this.updateLongScreenshotController(progress);
+  }
+
+  private destroyLongScreenshotController(): void {
+    const controller = this.longScreenshotController;
+    this.longScreenshotController = null;
+    if (controller) {
+      controller.destroy();
+    }
+  }
+
+  private createLongScreenshotController(
+    data: ScreenshotsData,
+    finish: () => Promise<void>,
+    cancel: () => void,
+  ): void {
+    this.destroyLongScreenshotController();
+    this.longScreenshotController = createLongScreenshotController({
+      data,
+      finish,
+      cancel: () => {
+        cancel();
+        this.endCapture();
+      },
+      logger: this.logger,
+      onShown: (window) => {
+        this.emit('longScreenshotControllerShown', window, data);
+      },
+    });
+  }
+
+  private updateLongScreenshotController(
+    progress: LongScreenshotProgress,
+  ): void {
+    this.longScreenshotController?.update(progress);
   }
 
   private async startLongScreenshot(data: ScreenshotsData): Promise<void> {
@@ -410,6 +448,7 @@ export default class Screenshots extends Events {
       for (const accelerator of registeredAccelerators) {
         globalShortcut.unregister(accelerator);
       }
+      this.destroyLongScreenshotController();
       this.longScreenshotSession = null;
     };
 
@@ -561,6 +600,7 @@ export default class Screenshots extends Events {
     };
 
     this.longScreenshotSession = { cancel, finish };
+    this.createLongScreenshotController(data, finish, cancel);
 
     registerShortcut('Enter', () => {
       finish();

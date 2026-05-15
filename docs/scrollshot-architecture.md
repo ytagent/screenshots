@@ -7,9 +7,10 @@
 3. The existing floating toolbar shows a long screenshot button.
 4. Clicking it starts scrollshot mode for that selected region.
 5. The overlay briefly shows instructions, then hides so the underlying app can receive scroll input.
-6. The app samples the selected display region repeatedly.
-7. The user scrolls the target content, presses Enter to finish, or presses Esc to cancel.
-8. The main process stitches captured frames and copies the final PNG to the clipboard through the existing `ok` path. Low-confidence results fail instead of being copied.
+6. A small controller is shown outside the selected region when there is safe screen space.
+7. The app samples the selected display region repeatedly.
+8. The user scrolls the target content, clicks Finish, presses Enter, clicks Cancel, or presses Esc.
+9. The main process stitches captured frames and copies the final PNG to the clipboard through the existing `ok` path. Low-confidence results fail instead of being copied.
 
 ## Package Boundaries
 
@@ -44,10 +45,10 @@ The implemented user-facing product path is manual-assisted external region capt
 - capture source: existing `node-screenshots` path, with Electron `desktopCapturer` fallback;
 - crop source: selected overlay bounds converted from DIP to native image pixels;
 - sampling: 300 ms interval, up to 80 frames;
-- finish/cancel: global Enter/Esc accelerators during capture;
+- finish/cancel: non-captured controller window outside the capture rect when possible, plus global Enter/Esc fallback;
 - output: stitched PNG sent through the existing `ok` event and copied to clipboard unless the stitch plan reports warnings.
 
-This path is intentionally conservative: a low-confidence stitch produces `longScreenshotFailed` instead of a corrupted image.
+This path is intentionally conservative: a low-confidence stitch produces `longScreenshotFailed` instead of a corrupted image. If a selected region leaves no safe space for the controller, the controller is skipped so it cannot pollute the capture, and the Enter/Esc fallback remains active.
 
 The implemented automatic path is for controlled Electron content:
 
@@ -111,5 +112,5 @@ Reference docs used while designing the adapters:
 - Automatic OS-level external-window scrolling is scaffolded, not complete.
 - Windows UI Automation / SendInput scrolling is not implemented.
 - macOS ScreenCaptureKit / Accessibility scrolling is not implemented.
-- The product path currently uses keyboard finish/cancel while the overlay is hidden. A release UX should add a small non-captured controller or tray/global hotkey polish.
+- Full-screen or near-full-screen selections may not have room for the non-captured controller; those sessions use the keyboard fallback.
 - The real desktop smoke tests drive an Electron fixture window, but they do not drive OS-level external-window automatic scrolling.
