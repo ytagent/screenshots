@@ -1,0 +1,23 @@
+{
+  "name": "scrollshot-session",
+  "version": "0.1.0",
+  "description": "Manual and automatic scrolling screenshot session orchestration",
+  "type": "commonjs",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib/**"
+  ],
+  "scripts": {
+    "build": "npm run clean && tsc",
+    "clean": "rimraf lib"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "scrollshot-core": "workspace:*"
+  },
+  "devDependencies": {
+    "rimraf": "^6.1.2",
+    "typescript": "^5.9.3"
+  }
+}

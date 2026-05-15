@@ -1,0 +1,99 @@
+{
+  "frameCount": 7,
+  "acceptedFrameCount": 7,
+  "discardedDuplicateFrames": [],
+  "width": 420,
+  "height": 2740,
+  "stickyHeaderRows": 0,
+  "estimatedOffsets": [
+    0,
+    410,
+    820,
+    1230,
+    1640,
+    2050,
+    2180
+  ],
+  "seamRows": [
+    560,
+    970,
+    1380,
+    1790,
+    2200,
+    2610
+  ],
+  "frames": [
+    {
+      "inputIndex": 0,
+      "outputY": 0,
+      "sourceY": 0,
+      "rows": 560,
+      "deltaY": 0,
+      "overlapRows": 560,
+      "confidence": 1,
+      "warnings": []
+    },
+    {
+      "inputIndex": 1,
+      "outputY": 560,
+      "sourceY": 150,
+      "rows": 410,
+      "deltaY": 410,
+      "overlapRows": 150,
+      "confidence": 1,
+      "warnings": []
+    },
+    {
+      "inputIndex": 2,
+      "outputY": 970,
+      "sourceY": 150,
+      "rows": 410,
+      "deltaY": 410,
+      "overlapRows": 150,
+      "confidence": 1,
+      "warnings": []
+    },
+    {
+      "inputIndex": 3,
+      "outputY": 1380,
+      "sourceY": 150,
+      "rows": 410,
+      "deltaY": 410,
+      "overlapRows": 150,
+      "confidence": 1,
+      "warnings": []
+    },
+    {
+      "inputIndex": 4,
+      "outputY": 1790,
+      "sourceY": 150,
+      "rows": 410,
+      "deltaY": 410,
+      "overlapRows": 150,
+      "confidence": 1,
+      "warnings": []
+    },
+    {
+      "inputIndex": 5,
+      "outputY": 2200,
+      "sourceY": 150,
+      "rows": 410,
+      "deltaY": 410,
+      "overlapRows": 150,
+      "confidence": 1,
+      "warnings": []
+    },
+    {
+      "inputIndex": 6,
+      "outputY": 2610,
+      "sourceY": 430,
+      "rows": 130,
+      "deltaY": 130,
+      "overlapRows": 430,
+      "confidence": 1,
+      "warnings": []
+    }
+  ],
+  "warnings": [],
+  "deviceScaleFactor": 1
+}

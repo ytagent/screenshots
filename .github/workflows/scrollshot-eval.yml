@@ -1,0 +1,53 @@
+name: Scrollshot Eval
+
+on:
+  push:
+    branches:
+      - master
+      - feature/**
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  eval:
+    name: Eval (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Run scrollshot eval
+        run: pnpm eval:scrollshot
+
+      - name: Upload scrollshot artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scrollshot-artifacts-${{ matrix.os }}
+          path: artifacts/latest

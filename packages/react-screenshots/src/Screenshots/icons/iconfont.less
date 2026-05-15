@@ -56,3 +56,31 @@
 .icon-rectangle:before {
   content: '\e00b';
 }
+
+.icon-scrollshot {
+  display: inline-block;
+  position: relative;
+  width: 15px;
+  height: 19px;
+  vertical-align: -3px;
+  font-family: inherit !important;
+}
+
+.icon-scrollshot:before {
+  position: absolute;
+  inset: 1px 2px;
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+  content: '';
+}
+
+.icon-scrollshot:after {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  left: 5px;
+  height: 1.5px;
+  background: currentColor;
+  box-shadow: 0 4px 0 currentColor, 0 8px 0 currentColor;
+  content: '';
+}

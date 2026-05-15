@@ -2,6 +2,7 @@ import Arrow from './Arrow';
 import Brush from './Brush';
 import Cancel from './Cancel';
 import Ellipse from './Ellipse';
+import LongScreenshot from './LongScreenshot';
 import Mosaic from './Mosaic';
 import Ok from './Ok';
 import Rectangle from './Rectangle';
@@ -20,6 +21,8 @@ export default [
   '|',
   Undo,
   Redo,
+  '|',
+  LongScreenshot,
   '|',
   Save,
   Cancel,

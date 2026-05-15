@@ -18,6 +18,7 @@ export interface ScreenshotsProps {
   height: number;
   lang?: Partial<Lang>;
   className?: string;
+  onLongScreenshot?: (bounds: Bounds) => void;
   [key: string]: unknown;
 }
 

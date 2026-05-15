@@ -26,6 +26,9 @@ importers:
       react-screenshots:
         specifier: workspace:*
         version: link:../react-screenshots
+      scrollshot-core:
+        specifier: workspace:*
+        version: link:../scrollshot-core
     devDependencies:
       '@types/debug':
         specifier: ^4.1.12
@@ -75,6 +78,28 @@ importers:
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
+      rimraf:
+        specifier: ^6.1.2
+        version: 6.1.2
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/scrollshot-core:
+    devDependencies:
+      rimraf:
+        specifier: ^6.1.2
+        version: 6.1.2
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/scrollshot-session:
+    dependencies:
+      scrollshot-core:
+        specifier: workspace:*
+        version: link:../scrollshot-core
+    devDependencies:
       rimraf:
         specifier: ^6.1.2
         version: 6.1.2

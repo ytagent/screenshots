@@ -1,0 +1,104 @@
+{
+  "fixture": {
+    "name": "high-dpi-scale",
+    "width": 840,
+    "height": 2980,
+    "viewportHeight": 560,
+    "scrollStep": 420,
+    "deviceScaleFactor": 2
+  },
+  "frames": [
+    {
+      "index": 0,
+      "scrollTop": 0,
+      "width": 840,
+      "height": 560,
+      "deviceScaleFactor": 2,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 840,
+        "height": 560
+      }
+    },
+    {
+      "index": 1,
+      "scrollTop": 420,
+      "width": 840,
+      "height": 560,
+      "deviceScaleFactor": 2,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 840,
+        "height": 560
+      }
+    },
+    {
+      "index": 2,
+      "scrollTop": 840,
+      "width": 840,
+      "height": 560,
+      "deviceScaleFactor": 2,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 840,
+        "height": 560
+      }
+    },
+    {
+      "index": 3,
+      "scrollTop": 1260,
+      "width": 840,
+      "height": 560,
+      "deviceScaleFactor": 2,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 840,
+        "height": 560
+      }
+    },
+    {
+      "index": 4,
+      "scrollTop": 1680,
+      "width": 840,
+      "height": 560,
+      "deviceScaleFactor": 2,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 840,
+        "height": 560
+      }
+    },
+    {
+      "index": 5,
+      "scrollTop": 2100,
+      "width": 840,
+      "height": 560,
+      "deviceScaleFactor": 2,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 840,
+        "height": 560
+      }
+    },
+    {
+      "index": 6,
+      "scrollTop": 2420,
+      "width": 840,
+      "height": 560,
+      "deviceScaleFactor": 2,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 840,
+        "height": 560
+      }
+    }
+  ],
+  "warnings": []
+}

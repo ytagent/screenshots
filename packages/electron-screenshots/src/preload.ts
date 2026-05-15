@@ -18,6 +18,7 @@ export interface Bounds {
 export interface ScreenshotsData {
   bounds: Bounds;
   display: Display;
+  longScreenshot?: boolean;
 }
 
 const map = new Map<ScreenshotsListener, Record<string, IpcRendererListener>>();
@@ -47,6 +48,11 @@ contextBridge.exposeInMainWorld('screenshots', {
     console.log('contextBridge ok', arrayBuffer, data);
 
     ipcRenderer.send('SCREENSHOTS:ok', Buffer.from(arrayBuffer), data);
+  },
+  longScreenshotStart: (data: ScreenshotsData) => {
+    console.log('contextBridge longScreenshotStart', data);
+
+    ipcRenderer.send('SCREENSHOTS:longScreenshot-start', data);
   },
   on: (channel: string, fn: ScreenshotsListener) => {
     console.log('contextBridge on', fn);

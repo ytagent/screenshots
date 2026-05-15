@@ -1,0 +1,116 @@
+{
+  "fixture": {
+    "name": "nested-scroll",
+    "width": 420,
+    "height": 3020,
+    "viewportHeight": 560,
+    "scrollStep": 390
+  },
+  "frames": [
+    {
+      "index": 0,
+      "scrollTop": 0,
+      "width": 420,
+      "height": 560,
+      "deviceScaleFactor": 1,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 420,
+        "height": 560
+      }
+    },
+    {
+      "index": 1,
+      "scrollTop": 390,
+      "width": 420,
+      "height": 560,
+      "deviceScaleFactor": 1,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 420,
+        "height": 560
+      }
+    },
+    {
+      "index": 2,
+      "scrollTop": 780,
+      "width": 420,
+      "height": 560,
+      "deviceScaleFactor": 1,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 420,
+        "height": 560
+      }
+    },
+    {
+      "index": 3,
+      "scrollTop": 1170,
+      "width": 420,
+      "height": 560,
+      "deviceScaleFactor": 1,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 420,
+        "height": 560
+      }
+    },
+    {
+      "index": 4,
+      "scrollTop": 1560,
+      "width": 420,
+      "height": 560,
+      "deviceScaleFactor": 1,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 420,
+        "height": 560
+      }
+    },
+    {
+      "index": 5,
+      "scrollTop": 1950,
+      "width": 420,
+      "height": 560,
+      "deviceScaleFactor": 1,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 420,
+        "height": 560
+      }
+    },
+    {
+      "index": 6,
+      "scrollTop": 2340,
+      "width": 420,
+      "height": 560,
+      "deviceScaleFactor": 1,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 420,
+        "height": 560
+      }
+    },
+    {
+      "index": 7,
+      "scrollTop": 2460,
+      "width": 420,
+      "height": 560,
+      "deviceScaleFactor": 1,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 420,
+        "height": 560
+      }
+    }
+  ],
+  "warnings": []
+}

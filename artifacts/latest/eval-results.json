@@ -1,0 +1,1309 @@
+{
+  "generatedAt": "2026-05-15T08:04:36.171Z",
+  "qualityGate": {
+    "overallScore": 0.985,
+    "criticalFailures": 0,
+    "missingRows": 0,
+    "duplicatedRows": 0,
+    "badSeams": 0,
+    "markerCoverage": 0.999
+  },
+  "qualityGatePassed": true,
+  "overallScore": 1,
+  "criticalFailures": 0,
+  "missingRows": 0,
+  "duplicatedRows": 0,
+  "badSeams": 0,
+  "markerCoverage": 1,
+  "fixtures": [
+    {
+      "name": "basic-long-page",
+      "passed": true,
+      "score": 1,
+      "criticalFailures": 0,
+      "missingRows": 0,
+      "duplicatedRows": 0,
+      "badSeams": 0,
+      "markerCoverage": 1,
+      "noPrematureCutoff": true,
+      "noScaleMismatch": true,
+      "frameCount": 7,
+      "actual": {
+        "width": 420,
+        "height": 2920
+      },
+      "expected": {
+        "width": 420,
+        "height": 2920
+      },
+      "diff": {
+        "width": 420,
+        "height": 2920,
+        "comparedPixels": 1226400,
+        "averageChannelError": 0,
+        "maxChannelError": 0,
+        "differentPixels": 0,
+        "score": 1,
+        "sizeMismatch": false
+      },
+      "plan": {
+        "frameCount": 7,
+        "acceptedFrameCount": 7,
+        "discardedDuplicateFrames": [],
+        "width": 420,
+        "height": 2920,
+        "stickyHeaderRows": 0,
+        "estimatedOffsets": [
+          0,
+          420,
+          840,
+          1260,
+          1680,
+          2100,
+          2360
+        ],
+        "seamRows": [
+          560,
+          980,
+          1400,
+          1820,
+          2240,
+          2660
+        ],
+        "frames": [
+          {
+            "inputIndex": 0,
+            "outputY": 0,
+            "sourceY": 0,
+            "rows": 560,
+            "deltaY": 0,
+            "overlapRows": 560,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 1,
+            "outputY": 560,
+            "sourceY": 140,
+            "rows": 420,
+            "deltaY": 420,
+            "overlapRows": 140,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 2,
+            "outputY": 980,
+            "sourceY": 140,
+            "rows": 420,
+            "deltaY": 420,
+            "overlapRows": 140,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 3,
+            "outputY": 1400,
+            "sourceY": 140,
+            "rows": 420,
+            "deltaY": 420,
+            "overlapRows": 140,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 4,
+            "outputY": 1820,
+            "sourceY": 140,
+            "rows": 420,
+            "deltaY": 420,
+            "overlapRows": 140,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 5,
+            "outputY": 2240,
+            "sourceY": 140,
+            "rows": 420,
+            "deltaY": 420,
+            "overlapRows": 140,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 6,
+            "outputY": 2660,
+            "sourceY": 300,
+            "rows": 260,
+            "deltaY": 260,
+            "overlapRows": 300,
+            "confidence": 1,
+            "warnings": []
+          }
+        ],
+        "warnings": [],
+        "deviceScaleFactor": 1
+      },
+      "artifacts": {
+        "actual": "fixtures/basic-long-page/actual.png",
+        "expected": "fixtures/basic-long-page/expected.png",
+        "diff": "fixtures/basic-long-page/diff.png",
+        "seams": "fixtures/basic-long-page/seams.png",
+        "stitchPlan": "fixtures/basic-long-page/stitch-plan.json",
+        "frames": "fixtures/basic-long-page/frames/",
+        "logs": "fixtures/basic-long-page/log.json"
+      }
+    },
+    {
+      "name": "striped-markers",
+      "passed": true,
+      "score": 1,
+      "criticalFailures": 0,
+      "missingRows": 0,
+      "duplicatedRows": 0,
+      "badSeams": 0,
+      "markerCoverage": 1,
+      "noPrematureCutoff": true,
+      "noScaleMismatch": true,
+      "frameCount": 8,
+      "actual": {
+        "width": 420,
+        "height": 3200
+      },
+      "expected": {
+        "width": 420,
+        "height": 3200
+      },
+      "diff": {
+        "width": 420,
+        "height": 3200,
+        "comparedPixels": 1344000,
+        "averageChannelError": 0,
+        "maxChannelError": 0,
+        "differentPixels": 0,
+        "score": 1,
+        "sizeMismatch": false
+      },
+      "plan": {
+        "frameCount": 8,
+        "acceptedFrameCount": 8,
+        "discardedDuplicateFrames": [],
+        "width": 420,
+        "height": 3200,
+        "stickyHeaderRows": 0,
+        "estimatedOffsets": [
+          0,
+          416,
+          832,
+          1248,
+          1664,
+          2080,
+          2496,
+          2640
+        ],
+        "seamRows": [
+          560,
+          976,
+          1392,
+          1808,
+          2224,
+          2640,
+          3056
+        ],
+        "frames": [
+          {
+            "inputIndex": 0,
+            "outputY": 0,
+            "sourceY": 0,
+            "rows": 560,
+            "deltaY": 0,
+            "overlapRows": 560,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 1,
+            "outputY": 560,
+            "sourceY": 144,
+            "rows": 416,
+            "deltaY": 416,
+            "overlapRows": 144,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 2,
+            "outputY": 976,
+            "sourceY": 144,
+            "rows": 416,
+            "deltaY": 416,
+            "overlapRows": 144,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 3,
+            "outputY": 1392,
+            "sourceY": 144,
+            "rows": 416,
+            "deltaY": 416,
+            "overlapRows": 144,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 4,
+            "outputY": 1808,
+            "sourceY": 144,
+            "rows": 416,
+            "deltaY": 416,
+            "overlapRows": 144,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 5,
+            "outputY": 2224,
+            "sourceY": 144,
+            "rows": 416,
+            "deltaY": 416,
+            "overlapRows": 144,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 6,
+            "outputY": 2640,
+            "sourceY": 144,
+            "rows": 416,
+            "deltaY": 416,
+            "overlapRows": 144,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 7,
+            "outputY": 3056,
+            "sourceY": 416,
+            "rows": 144,
+            "deltaY": 144,
+            "overlapRows": 416,
+            "confidence": 1,
+            "warnings": []
+          }
+        ],
+        "warnings": [],
+        "deviceScaleFactor": 1
+      },
+      "artifacts": {
+        "actual": "fixtures/striped-markers/actual.png",
+        "expected": "fixtures/striped-markers/expected.png",
+        "diff": "fixtures/striped-markers/diff.png",
+        "seams": "fixtures/striped-markers/seams.png",
+        "stitchPlan": "fixtures/striped-markers/stitch-plan.json",
+        "frames": "fixtures/striped-markers/frames/",
+        "logs": "fixtures/striped-markers/log.json"
+      }
+    },
+    {
+      "name": "sticky-header",
+      "passed": true,
+      "score": 1,
+      "criticalFailures": 0,
+      "missingRows": 0,
+      "duplicatedRows": 0,
+      "badSeams": 0,
+      "markerCoverage": 1,
+      "noPrematureCutoff": true,
+      "noScaleMismatch": true,
+      "frameCount": 6,
+      "actual": {
+        "width": 420,
+        "height": 2440
+      },
+      "expected": {
+        "width": 420,
+        "height": 2440
+      },
+      "diff": {
+        "width": 420,
+        "height": 2440,
+        "comparedPixels": 1024800,
+        "averageChannelError": 0,
+        "maxChannelError": 0,
+        "differentPixels": 0,
+        "score": 1,
+        "sizeMismatch": false
+      },
+      "plan": {
+        "frameCount": 6,
+        "acceptedFrameCount": 6,
+        "discardedDuplicateFrames": [],
+        "width": 420,
+        "height": 2440,
+        "stickyHeaderRows": 40,
+        "estimatedOffsets": [
+          0,
+          420,
+          840,
+          1260,
+          1680,
+          1880
+        ],
+        "seamRows": [
+          560,
+          980,
+          1400,
+          1820,
+          2240
+        ],
+        "frames": [
+          {
+            "inputIndex": 0,
+            "outputY": 0,
+            "sourceY": 0,
+            "rows": 560,
+            "deltaY": 0,
+            "overlapRows": 520,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 1,
+            "outputY": 560,
+            "sourceY": 140,
+            "rows": 420,
+            "deltaY": 420,
+            "overlapRows": 100,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 2,
+            "outputY": 980,
+            "sourceY": 140,
+            "rows": 420,
+            "deltaY": 420,
+            "overlapRows": 100,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 3,
+            "outputY": 1400,
+            "sourceY": 140,
+            "rows": 420,
+            "deltaY": 420,
+            "overlapRows": 100,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 4,
+            "outputY": 1820,
+            "sourceY": 140,
+            "rows": 420,
+            "deltaY": 420,
+            "overlapRows": 100,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 5,
+            "outputY": 2240,
+            "sourceY": 360,
+            "rows": 200,
+            "deltaY": 200,
+            "overlapRows": 320,
+            "confidence": 1,
+            "warnings": []
+          }
+        ],
+        "warnings": [],
+        "deviceScaleFactor": 1
+      },
+      "artifacts": {
+        "actual": "fixtures/sticky-header/actual.png",
+        "expected": "fixtures/sticky-header/expected.png",
+        "diff": "fixtures/sticky-header/diff.png",
+        "seams": "fixtures/sticky-header/seams.png",
+        "stitchPlan": "fixtures/sticky-header/stitch-plan.json",
+        "frames": "fixtures/sticky-header/frames/",
+        "logs": "fixtures/sticky-header/log.json"
+      }
+    },
+    {
+      "name": "lazy-images",
+      "passed": true,
+      "score": 1,
+      "criticalFailures": 0,
+      "missingRows": 0,
+      "duplicatedRows": 0,
+      "badSeams": 0,
+      "markerCoverage": 1,
+      "noPrematureCutoff": true,
+      "noScaleMismatch": true,
+      "frameCount": 7,
+      "actual": {
+        "width": 420,
+        "height": 2780
+      },
+      "expected": {
+        "width": 420,
+        "height": 2780
+      },
+      "diff": {
+        "width": 420,
+        "height": 2780,
+        "comparedPixels": 1167600,
+        "averageChannelError": 0,
+        "maxChannelError": 0,
+        "differentPixels": 0,
+        "score": 1,
+        "sizeMismatch": false
+      },
+      "plan": {
+        "frameCount": 7,
+        "acceptedFrameCount": 7,
+        "discardedDuplicateFrames": [],
+        "width": 420,
+        "height": 2780,
+        "stickyHeaderRows": 0,
+        "estimatedOffsets": [
+          0,
+          400,
+          800,
+          1200,
+          1600,
+          2000,
+          2220
+        ],
+        "seamRows": [
+          560,
+          960,
+          1360,
+          1760,
+          2160,
+          2560
+        ],
+        "frames": [
+          {
+            "inputIndex": 0,
+            "outputY": 0,
+            "sourceY": 0,
+            "rows": 560,
+            "deltaY": 0,
+            "overlapRows": 560,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 1,
+            "outputY": 560,
+            "sourceY": 160,
+            "rows": 400,
+            "deltaY": 400,
+            "overlapRows": 160,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 2,
+            "outputY": 960,
+            "sourceY": 160,
+            "rows": 400,
+            "deltaY": 400,
+            "overlapRows": 160,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 3,
+            "outputY": 1360,
+            "sourceY": 160,
+            "rows": 400,
+            "deltaY": 400,
+            "overlapRows": 160,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 4,
+            "outputY": 1760,
+            "sourceY": 160,
+            "rows": 400,
+            "deltaY": 400,
+            "overlapRows": 160,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 5,
+            "outputY": 2160,
+            "sourceY": 160,
+            "rows": 400,
+            "deltaY": 400,
+            "overlapRows": 160,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 6,
+            "outputY": 2560,
+            "sourceY": 340,
+            "rows": 220,
+            "deltaY": 220,
+            "overlapRows": 340,
+            "confidence": 1,
+            "warnings": []
+          }
+        ],
+        "warnings": [],
+        "deviceScaleFactor": 1
+      },
+      "artifacts": {
+        "actual": "fixtures/lazy-images/actual.png",
+        "expected": "fixtures/lazy-images/expected.png",
+        "diff": "fixtures/lazy-images/diff.png",
+        "seams": "fixtures/lazy-images/seams.png",
+        "stitchPlan": "fixtures/lazy-images/stitch-plan.json",
+        "frames": "fixtures/lazy-images/frames/",
+        "logs": "fixtures/lazy-images/log.json"
+      }
+    },
+    {
+      "name": "nested-scroll",
+      "passed": true,
+      "score": 1,
+      "criticalFailures": 0,
+      "missingRows": 0,
+      "duplicatedRows": 0,
+      "badSeams": 0,
+      "markerCoverage": 1,
+      "noPrematureCutoff": true,
+      "noScaleMismatch": true,
+      "frameCount": 8,
+      "actual": {
+        "width": 420,
+        "height": 3020
+      },
+      "expected": {
+        "width": 420,
+        "height": 3020
+      },
+      "diff": {
+        "width": 420,
+        "height": 3020,
+        "comparedPixels": 1268400,
+        "averageChannelError": 0,
+        "maxChannelError": 0,
+        "differentPixels": 0,
+        "score": 1,
+        "sizeMismatch": false
+      },
+      "plan": {
+        "frameCount": 8,
+        "acceptedFrameCount": 8,
+        "discardedDuplicateFrames": [],
+        "width": 420,
+        "height": 3020,
+        "stickyHeaderRows": 0,
+        "estimatedOffsets": [
+          0,
+          390,
+          780,
+          1170,
+          1560,
+          1950,
+          2340,
+          2460
+        ],
+        "seamRows": [
+          560,
+          950,
+          1340,
+          1730,
+          2120,
+          2510,
+          2900
+        ],
+        "frames": [
+          {
+            "inputIndex": 0,
+            "outputY": 0,
+            "sourceY": 0,
+            "rows": 560,
+            "deltaY": 0,
+            "overlapRows": 560,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 1,
+            "outputY": 560,
+            "sourceY": 170,
+            "rows": 390,
+            "deltaY": 390,
+            "overlapRows": 170,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 2,
+            "outputY": 950,
+            "sourceY": 170,
+            "rows": 390,
+            "deltaY": 390,
+            "overlapRows": 170,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 3,
+            "outputY": 1340,
+            "sourceY": 170,
+            "rows": 390,
+            "deltaY": 390,
+            "overlapRows": 170,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 4,
+            "outputY": 1730,
+            "sourceY": 170,
+            "rows": 390,
+            "deltaY": 390,
+            "overlapRows": 170,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 5,
+            "outputY": 2120,
+            "sourceY": 170,
+            "rows": 390,
+            "deltaY": 390,
+            "overlapRows": 170,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 6,
+            "outputY": 2510,
+            "sourceY": 170,
+            "rows": 390,
+            "deltaY": 390,
+            "overlapRows": 170,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 7,
+            "outputY": 2900,
+            "sourceY": 440,
+            "rows": 120,
+            "deltaY": 120,
+            "overlapRows": 440,
+            "confidence": 1,
+            "warnings": []
+          }
+        ],
+        "warnings": [],
+        "deviceScaleFactor": 1
+      },
+      "artifacts": {
+        "actual": "fixtures/nested-scroll/actual.png",
+        "expected": "fixtures/nested-scroll/expected.png",
+        "diff": "fixtures/nested-scroll/diff.png",
+        "seams": "fixtures/nested-scroll/seams.png",
+        "stitchPlan": "fixtures/nested-scroll/stitch-plan.json",
+        "frames": "fixtures/nested-scroll/frames/",
+        "logs": "fixtures/nested-scroll/log.json"
+      }
+    },
+    {
+      "name": "virtualized-list",
+      "passed": true,
+      "score": 1,
+      "criticalFailures": 0,
+      "missingRows": 0,
+      "duplicatedRows": 0,
+      "badSeams": 0,
+      "markerCoverage": 1,
+      "noPrematureCutoff": true,
+      "noScaleMismatch": true,
+      "frameCount": 7,
+      "actual": {
+        "width": 420,
+        "height": 2860
+      },
+      "expected": {
+        "width": 420,
+        "height": 2860
+      },
+      "diff": {
+        "width": 420,
+        "height": 2860,
+        "comparedPixels": 1201200,
+        "averageChannelError": 0,
+        "maxChannelError": 0,
+        "differentPixels": 0,
+        "score": 1,
+        "sizeMismatch": false
+      },
+      "plan": {
+        "frameCount": 7,
+        "acceptedFrameCount": 7,
+        "discardedDuplicateFrames": [],
+        "width": 420,
+        "height": 2860,
+        "stickyHeaderRows": 0,
+        "estimatedOffsets": [
+          0,
+          440,
+          880,
+          1320,
+          1760,
+          2200,
+          2300
+        ],
+        "seamRows": [
+          560,
+          1000,
+          1440,
+          1880,
+          2320,
+          2760
+        ],
+        "frames": [
+          {
+            "inputIndex": 0,
+            "outputY": 0,
+            "sourceY": 0,
+            "rows": 560,
+            "deltaY": 0,
+            "overlapRows": 560,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 1,
+            "outputY": 560,
+            "sourceY": 120,
+            "rows": 440,
+            "deltaY": 440,
+            "overlapRows": 120,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 2,
+            "outputY": 1000,
+            "sourceY": 120,
+            "rows": 440,
+            "deltaY": 440,
+            "overlapRows": 120,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 3,
+            "outputY": 1440,
+            "sourceY": 120,
+            "rows": 440,
+            "deltaY": 440,
+            "overlapRows": 120,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 4,
+            "outputY": 1880,
+            "sourceY": 120,
+            "rows": 440,
+            "deltaY": 440,
+            "overlapRows": 120,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 5,
+            "outputY": 2320,
+            "sourceY": 120,
+            "rows": 440,
+            "deltaY": 440,
+            "overlapRows": 120,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 6,
+            "outputY": 2760,
+            "sourceY": 460,
+            "rows": 100,
+            "deltaY": 100,
+            "overlapRows": 460,
+            "confidence": 1,
+            "warnings": []
+          }
+        ],
+        "warnings": [],
+        "deviceScaleFactor": 1
+      },
+      "artifacts": {
+        "actual": "fixtures/virtualized-list/actual.png",
+        "expected": "fixtures/virtualized-list/expected.png",
+        "diff": "fixtures/virtualized-list/diff.png",
+        "seams": "fixtures/virtualized-list/seams.png",
+        "stitchPlan": "fixtures/virtualized-list/stitch-plan.json",
+        "frames": "fixtures/virtualized-list/frames/",
+        "logs": "fixtures/virtualized-list/log.json"
+      }
+    },
+    {
+      "name": "chat-history-like",
+      "passed": true,
+      "score": 1,
+      "criticalFailures": 0,
+      "missingRows": 0,
+      "duplicatedRows": 0,
+      "badSeams": 0,
+      "markerCoverage": 1,
+      "noPrematureCutoff": true,
+      "noScaleMismatch": true,
+      "frameCount": 7,
+      "actual": {
+        "width": 420,
+        "height": 2740
+      },
+      "expected": {
+        "width": 420,
+        "height": 2740
+      },
+      "diff": {
+        "width": 420,
+        "height": 2740,
+        "comparedPixels": 1150800,
+        "averageChannelError": 0,
+        "maxChannelError": 0,
+        "differentPixels": 0,
+        "score": 1,
+        "sizeMismatch": false
+      },
+      "plan": {
+        "frameCount": 7,
+        "acceptedFrameCount": 7,
+        "discardedDuplicateFrames": [],
+        "width": 420,
+        "height": 2740,
+        "stickyHeaderRows": 0,
+        "estimatedOffsets": [
+          0,
+          410,
+          820,
+          1230,
+          1640,
+          2050,
+          2180
+        ],
+        "seamRows": [
+          560,
+          970,
+          1380,
+          1790,
+          2200,
+          2610
+        ],
+        "frames": [
+          {
+            "inputIndex": 0,
+            "outputY": 0,
+            "sourceY": 0,
+            "rows": 560,
+            "deltaY": 0,
+            "overlapRows": 560,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 1,
+            "outputY": 560,
+            "sourceY": 150,
+            "rows": 410,
+            "deltaY": 410,
+            "overlapRows": 150,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 2,
+            "outputY": 970,
+            "sourceY": 150,
+            "rows": 410,
+            "deltaY": 410,
+            "overlapRows": 150,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 3,
+            "outputY": 1380,
+            "sourceY": 150,
+            "rows": 410,
+            "deltaY": 410,
+            "overlapRows": 150,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 4,
+            "outputY": 1790,
+            "sourceY": 150,
+            "rows": 410,
+            "deltaY": 410,
+            "overlapRows": 150,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 5,
+            "outputY": 2200,
+            "sourceY": 150,
+            "rows": 410,
+            "deltaY": 410,
+            "overlapRows": 150,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 6,
+            "outputY": 2610,
+            "sourceY": 430,
+            "rows": 130,
+            "deltaY": 130,
+            "overlapRows": 430,
+            "confidence": 1,
+            "warnings": []
+          }
+        ],
+        "warnings": [],
+        "deviceScaleFactor": 1
+      },
+      "artifacts": {
+        "actual": "fixtures/chat-history-like/actual.png",
+        "expected": "fixtures/chat-history-like/expected.png",
+        "diff": "fixtures/chat-history-like/diff.png",
+        "seams": "fixtures/chat-history-like/seams.png",
+        "stitchPlan": "fixtures/chat-history-like/stitch-plan.json",
+        "frames": "fixtures/chat-history-like/frames/",
+        "logs": "fixtures/chat-history-like/log.json"
+      }
+    },
+    {
+      "name": "pdf-like",
+      "passed": true,
+      "score": 1,
+      "criticalFailures": 0,
+      "missingRows": 0,
+      "duplicatedRows": 0,
+      "badSeams": 0,
+      "markerCoverage": 1,
+      "noPrematureCutoff": true,
+      "noScaleMismatch": true,
+      "frameCount": 8,
+      "actual": {
+        "width": 420,
+        "height": 3240
+      },
+      "expected": {
+        "width": 420,
+        "height": 3240
+      },
+      "diff": {
+        "width": 420,
+        "height": 3240,
+        "comparedPixels": 1360800,
+        "averageChannelError": 0,
+        "maxChannelError": 0,
+        "differentPixels": 0,
+        "score": 1,
+        "sizeMismatch": false
+      },
+      "plan": {
+        "frameCount": 8,
+        "acceptedFrameCount": 8,
+        "discardedDuplicateFrames": [],
+        "width": 420,
+        "height": 3240,
+        "stickyHeaderRows": 0,
+        "estimatedOffsets": [
+          0,
+          430,
+          860,
+          1290,
+          1720,
+          2150,
+          2580,
+          2680
+        ],
+        "seamRows": [
+          560,
+          990,
+          1420,
+          1850,
+          2280,
+          2710,
+          3140
+        ],
+        "frames": [
+          {
+            "inputIndex": 0,
+            "outputY": 0,
+            "sourceY": 0,
+            "rows": 560,
+            "deltaY": 0,
+            "overlapRows": 560,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 1,
+            "outputY": 560,
+            "sourceY": 130,
+            "rows": 430,
+            "deltaY": 430,
+            "overlapRows": 130,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 2,
+            "outputY": 990,
+            "sourceY": 130,
+            "rows": 430,
+            "deltaY": 430,
+            "overlapRows": 130,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 3,
+            "outputY": 1420,
+            "sourceY": 130,
+            "rows": 430,
+            "deltaY": 430,
+            "overlapRows": 130,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 4,
+            "outputY": 1850,
+            "sourceY": 130,
+            "rows": 430,
+            "deltaY": 430,
+            "overlapRows": 130,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 5,
+            "outputY": 2280,
+            "sourceY": 130,
+            "rows": 430,
+            "deltaY": 430,
+            "overlapRows": 130,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 6,
+            "outputY": 2710,
+            "sourceY": 130,
+            "rows": 430,
+            "deltaY": 430,
+            "overlapRows": 130,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 7,
+            "outputY": 3140,
+            "sourceY": 460,
+            "rows": 100,
+            "deltaY": 100,
+            "overlapRows": 460,
+            "confidence": 1,
+            "warnings": []
+          }
+        ],
+        "warnings": [],
+        "deviceScaleFactor": 1
+      },
+      "artifacts": {
+        "actual": "fixtures/pdf-like/actual.png",
+        "expected": "fixtures/pdf-like/expected.png",
+        "diff": "fixtures/pdf-like/diff.png",
+        "seams": "fixtures/pdf-like/seams.png",
+        "stitchPlan": "fixtures/pdf-like/stitch-plan.json",
+        "frames": "fixtures/pdf-like/frames/",
+        "logs": "fixtures/pdf-like/log.json"
+      }
+    },
+    {
+      "name": "high-dpi-scale",
+      "passed": true,
+      "score": 1,
+      "criticalFailures": 0,
+      "missingRows": 0,
+      "duplicatedRows": 0,
+      "badSeams": 0,
+      "markerCoverage": 1,
+      "noPrematureCutoff": true,
+      "noScaleMismatch": true,
+      "frameCount": 7,
+      "actual": {
+        "width": 840,
+        "height": 2980
+      },
+      "expected": {
+        "width": 840,
+        "height": 2980
+      },
+      "diff": {
+        "width": 840,
+        "height": 2980,
+        "comparedPixels": 2503200,
+        "averageChannelError": 0,
+        "maxChannelError": 0,
+        "differentPixels": 0,
+        "score": 1,
+        "sizeMismatch": false
+      },
+      "plan": {
+        "frameCount": 7,
+        "acceptedFrameCount": 7,
+        "discardedDuplicateFrames": [],
+        "width": 840,
+        "height": 2980,
+        "stickyHeaderRows": 0,
+        "estimatedOffsets": [
+          0,
+          420,
+          840,
+          1260,
+          1680,
+          2100,
+          2420
+        ],
+        "seamRows": [
+          560,
+          980,
+          1400,
+          1820,
+          2240,
+          2660
+        ],
+        "frames": [
+          {
+            "inputIndex": 0,
+            "outputY": 0,
+            "sourceY": 0,
+            "rows": 560,
+            "deltaY": 0,
+            "overlapRows": 560,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 1,
+            "outputY": 560,
+            "sourceY": 140,
+            "rows": 420,
+            "deltaY": 420,
+            "overlapRows": 140,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 2,
+            "outputY": 980,
+            "sourceY": 140,
+            "rows": 420,
+            "deltaY": 420,
+            "overlapRows": 140,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 3,
+            "outputY": 1400,
+            "sourceY": 140,
+            "rows": 420,
+            "deltaY": 420,
+            "overlapRows": 140,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 4,
+            "outputY": 1820,
+            "sourceY": 140,
+            "rows": 420,
+            "deltaY": 420,
+            "overlapRows": 140,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 5,
+            "outputY": 2240,
+            "sourceY": 140,
+            "rows": 420,
+            "deltaY": 420,
+            "overlapRows": 140,
+            "confidence": 1,
+            "warnings": []
+          },
+          {
+            "inputIndex": 6,
+            "outputY": 2660,
+            "sourceY": 240,
+            "rows": 320,
+            "deltaY": 320,
+            "overlapRows": 240,
+            "confidence": 1,
+            "warnings": []
+          }
+        ],
+        "warnings": [],
+        "deviceScaleFactor": 2
+      },
+      "artifacts": {
+        "actual": "fixtures/high-dpi-scale/actual.png",
+        "expected": "fixtures/high-dpi-scale/expected.png",
+        "diff": "fixtures/high-dpi-scale/diff.png",
+        "seams": "fixtures/high-dpi-scale/seams.png",
+        "stitchPlan": "fixtures/high-dpi-scale/stitch-plan.json",
+        "frames": "fixtures/high-dpi-scale/frames/",
+        "logs": "fixtures/high-dpi-scale/log.json"
+      }
+    }
+  ],
+  "failureCategories": {
+    "missingContent": false,
+    "duplicatedContent": false,
+    "badOverlapOffset": false,
+    "badSeam": false,
+    "stickyHeaderDuplication": false,
+    "insufficientOverlap": false,
+    "manualScrollTooFast": false,
+    "dynamicContentInstability": false,
+    "captureFailure": false,
+    "platformLimitation": false,
+    "dpiScaleMismatch": false,
+    "prematureBottomDetection": false
+  }
+}

@@ -8,6 +8,7 @@
   "scripts": {
     "postinstall": "npm run build",
     "build": "pnpm --filter \"*\" run build",
+    "eval:scrollshot": "pnpm --filter scrollshot-core run build && node scripts/scrollshot-eval.mjs",
     "check": "biome check --write",
     "format": "biome format --write",
     "lint": "biome lint --write"

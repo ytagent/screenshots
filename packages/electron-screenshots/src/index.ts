@@ -7,15 +7,23 @@ import {
   type DesktopCapturerSource,
   desktopCapturer,
   dialog,
+  globalShortcut,
   ipcMain,
   nativeImage,
+  type NativeImage,
   screen,
 } from 'electron';
 import fs from 'fs-extra';
+import { stitchFrames, type ScrollshotFrame } from 'scrollshot-core';
 import Event from './event.js';
 import getDisplay, { type Display } from './getDisplay.js';
 import padStart from './padStart.js';
 import type { Bounds, ScreenshotsData } from './preload.js';
+import {
+  cropNativeImageByDipBounds,
+  nativeImageToPixelImage,
+  pixelImageToNativeImage,
+} from './scrollshot/nativeImage.js';
 
 export type LoggerFn = (...args: unknown[]) => void;
 export type Logger = Debugger | LoggerFn;
@@ -33,6 +41,7 @@ export interface Lang {
   operation_arrow_title?: string;
   operation_ellipse_title?: string;
   operation_rectangle_title?: string;
+  operation_long_screenshot_title?: string;
 }
 
 export interface ScreenshotsOpts {
@@ -58,6 +67,11 @@ export default class Screenshots extends Events {
   private logger: Logger;
 
   private singleWindow: boolean;
+
+  private longScreenshotSession: {
+    cancel: () => void;
+    finish: () => Promise<void>;
+  } | null = null;
 
   private isReady = new Promise<void>((resolve) => {
     ipcMain.once('SCREENSHOTS:ready', () => {
@@ -100,6 +114,9 @@ export default class Screenshots extends Events {
    */
   public async endCapture(): Promise<void> {
     this.logger('endCapture');
+    if (this.longScreenshotSession) {
+      this.longScreenshotSession.cancel();
+    }
     await this.reset();
 
     if (!this.$win) {
@@ -240,6 +257,11 @@ export default class Screenshots extends Events {
   }
 
   private async capture(display: Display): Promise<string> {
+    const image = await this.captureNativeImage(display);
+    return image.toDataURL();
+  }
+
+  private async captureNativeImage(display: Display): Promise<NativeImage> {
     this.logger('SCREENSHOTS:capture');
 
     try {
@@ -275,7 +297,7 @@ export default class Screenshots extends Events {
 
       const image = await monitor.captureImage();
       const buffer = await image.toPng(true);
-      return `data:image/png;base64,${buffer.toString('base64')}`;
+      return nativeImage.createFromBuffer(buffer);
     } catch (err) {
       this.logger('SCREENSHOTS:capture Monitor capture() error %o', err);
       const sources = await desktopCapturer.getSources({
@@ -309,8 +331,224 @@ export default class Screenshots extends Events {
         throw new Error("Can't find screen source");
       }
 
-      return source.thumbnail.toDataURL();
+      return source.thumbnail;
     }
+  }
+
+  private sendLongScreenshotProgress(progress: {
+    state: string;
+    message?: string;
+    frameCount?: number;
+    warnings?: string[];
+  }) {
+    this.$view.webContents.send('SCREENSHOTS:longScreenshot-progress', progress);
+  }
+
+  private async startLongScreenshot(data: ScreenshotsData): Promise<void> {
+    this.logger('SCREENSHOTS:longScreenshot-start %o', data);
+
+    if (this.longScreenshotSession) {
+      this.longScreenshotSession.cancel();
+    }
+
+    const startEvent = new Event();
+    this.emit('longScreenshotStart', startEvent, data);
+    if (startEvent.defaultPrevented) {
+      return;
+    }
+
+    const frames: ScrollshotFrame[] = [];
+    const warnings: string[] = [];
+    let cancelled = false;
+    let finishing = false;
+    let captureBusy = false;
+    let frameTimer: ReturnType<typeof setInterval> | null = null;
+    const registeredAccelerators: string[] = [];
+
+    const cleanup = () => {
+      if (frameTimer) {
+        clearInterval(frameTimer);
+        frameTimer = null;
+      }
+      for (const accelerator of registeredAccelerators) {
+        globalShortcut.unregister(accelerator);
+      }
+      this.longScreenshotSession = null;
+    };
+
+    const captureFrame = async (force = false) => {
+      if (cancelled || (!force && finishing) || captureBusy) {
+        return;
+      }
+      captureBusy = true;
+      try {
+        const fullImage = await this.captureNativeImage(data.display);
+        const cropped = cropNativeImageByDipBounds(
+          fullImage,
+          data.bounds,
+          data.display,
+        );
+        frames.push({
+          image: nativeImageToPixelImage(cropped.image),
+          index: frames.length,
+          timestamp: Date.now(),
+          deviceScaleFactor: cropped.scaleFactor,
+          captureRect: data.bounds,
+        });
+        this.sendLongScreenshotProgress({
+          state: 'capturing',
+          frameCount: frames.length,
+          message: `长截图采集中：已捕获 ${frames.length} 帧。滚动完成后按 Enter，按 Esc 取消。`,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        warnings.push(`capture failure: ${message}`);
+        this.logger('SCREENSHOTS:longScreenshot capture failure %o', err);
+      } finally {
+        captureBusy = false;
+      }
+    };
+
+    const finish = async () => {
+      if (finishing || cancelled) {
+        return;
+      }
+      finishing = true;
+      await captureFrame(true);
+      cleanup();
+
+      if (frames.length < 2) {
+        const message = '长截图失败：捕获帧不足，至少需要 2 帧。';
+        this.sendLongScreenshotProgress({
+          state: 'failed',
+          frameCount: frames.length,
+          warnings,
+          message,
+        });
+        this.emit('longScreenshotFailed', new Event(), data, message, warnings);
+        await this.endCapture();
+        return;
+      }
+
+      try {
+        this.sendLongScreenshotProgress({
+          state: 'stitching',
+          frameCount: frames.length,
+          message: '长截图拼接中...',
+        });
+        const result = stitchFrames(frames, {
+          stickyHeaderRows: 'auto',
+          minOverlapRatio: 0.16,
+          maxOverlapRatio: 0.96,
+          minScrollDelta: 3,
+          minConfidence: 0.93,
+          sampleColumns: 64,
+          sampleRows: 220,
+        });
+
+        if (result.plan.failureReason) {
+          const message = `长截图失败：${result.plan.failureReason}`;
+          this.sendLongScreenshotProgress({
+            state: 'failed',
+            frameCount: frames.length,
+            warnings: result.plan.warnings,
+            message,
+          });
+          this.emit(
+            'longScreenshotFailed',
+            new Event(),
+            data,
+            message,
+            result.plan.warnings,
+            result.plan,
+          );
+          await this.endCapture();
+          return;
+        }
+
+        const outputScaleFactor = frames[0]?.deviceScaleFactor ?? 1;
+        const buffer = pixelImageToNativeImage(
+          result.image,
+          outputScaleFactor,
+        ).toPNG();
+        const okData: ScreenshotsData = {
+          ...data,
+          longScreenshot: true,
+        };
+        const event = new Event();
+        this.emit('ok', event, buffer, okData);
+        this.emit('longScreenshot', event, buffer, okData, result.plan);
+        if (event.defaultPrevented) {
+          return;
+        }
+        clipboard.writeImage(nativeImage.createFromBuffer(buffer));
+        await this.endCapture();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger('SCREENSHOTS:longScreenshot stitch failure %o', err);
+        this.sendLongScreenshotProgress({
+          state: 'failed',
+          frameCount: frames.length,
+          warnings: [message],
+          message: `长截图失败：${message}`,
+        });
+        this.emit('longScreenshotFailed', new Event(), data, message, warnings);
+        await this.endCapture();
+      }
+    };
+
+    const cancel = () => {
+      if (cancelled) {
+        return;
+      }
+      cancelled = true;
+      cleanup();
+      this.sendLongScreenshotProgress({
+        state: 'cancelled',
+        frameCount: frames.length,
+        message: '长截图已取消。',
+      });
+      this.emit('longScreenshotCancel', new Event(), data);
+    };
+
+    const registerShortcut = (
+      accelerator: string,
+      handler: () => void | Promise<void>,
+    ) => {
+      if (globalShortcut.isRegistered(accelerator)) {
+        return;
+      }
+      if (globalShortcut.register(accelerator, handler)) {
+        registeredAccelerators.push(accelerator);
+      }
+    };
+
+    this.longScreenshotSession = { cancel, finish };
+
+    registerShortcut('Enter', () => {
+      finish();
+    });
+    registerShortcut('Esc', () => {
+      cancel();
+      this.endCapture();
+    });
+
+    this.sendLongScreenshotProgress({
+      state: 'starting',
+      frameCount: 0,
+      message:
+        '长截图模式即将开始。请在选区内滚动，按 Enter 完成，按 Esc 取消。',
+    });
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 900));
+    this.$win?.hide();
+    await captureFrame();
+    frameTimer = setInterval(() => {
+      captureFrame();
+      if (frames.length >= 80) {
+        finish();
+      }
+    }, 300);
   }
 
   /**
@@ -351,6 +589,28 @@ export default class Screenshots extends Events {
       }
       this.endCapture();
     });
+
+    ipcMain.on(
+      'SCREENSHOTS:longScreenshot-start',
+      (_event, data: ScreenshotsData) => {
+        this.startLongScreenshot(data).catch((err) => {
+          const message = err instanceof Error ? err.message : String(err);
+          this.logger('SCREENSHOTS:longScreenshot-start error %o', err);
+          this.sendLongScreenshotProgress({
+            state: 'failed',
+            message: `长截图失败：${message}`,
+            warnings: [message],
+          });
+          this.emit(
+            'longScreenshotFailed',
+            new Event(),
+            data,
+            message,
+            [message],
+          );
+        });
+      },
+    );
 
     /**
      * SAVE事件

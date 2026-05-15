@@ -1,0 +1,103 @@
+{
+  "fixture": {
+    "name": "chat-history-like",
+    "width": 420,
+    "height": 2740,
+    "viewportHeight": 560,
+    "scrollStep": 410
+  },
+  "frames": [
+    {
+      "index": 0,
+      "scrollTop": 0,
+      "width": 420,
+      "height": 560,
+      "deviceScaleFactor": 1,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 420,
+        "height": 560
+      }
+    },
+    {
+      "index": 1,
+      "scrollTop": 410,
+      "width": 420,
+      "height": 560,
+      "deviceScaleFactor": 1,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 420,
+        "height": 560
+      }
+    },
+    {
+      "index": 2,
+      "scrollTop": 820,
+      "width": 420,
+      "height": 560,
+      "deviceScaleFactor": 1,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 420,
+        "height": 560
+      }
+    },
+    {
+      "index": 3,
+      "scrollTop": 1230,
+      "width": 420,
+      "height": 560,
+      "deviceScaleFactor": 1,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 420,
+        "height": 560
+      }
+    },
+    {
+      "index": 4,
+      "scrollTop": 1640,
+      "width": 420,
+      "height": 560,
+      "deviceScaleFactor": 1,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 420,
+        "height": 560
+      }
+    },
+    {
+      "index": 5,
+      "scrollTop": 2050,
+      "width": 420,
+      "height": 560,
+      "deviceScaleFactor": 1,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 420,
+        "height": 560
+      }
+    },
+    {
+      "index": 6,
+      "scrollTop": 2180,
+      "width": 420,
+      "height": 560,
+      "deviceScaleFactor": 1,
+      "captureRect": {
+        "x": 0,
+        "y": 0,
+        "width": 420,
+        "height": 560
+      }
+    }
+  ],
+  "warnings": []
+}

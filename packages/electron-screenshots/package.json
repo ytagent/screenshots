@@ -39,7 +39,8 @@
     "debug": "^4.4.3",
     "fs-extra": "^11.3.3",
     "node-screenshots": "^0.2.8",
-    "react-screenshots": "workspace:*"
+    "react-screenshots": "workspace:*",
+    "scrollshot-core": "workspace:*"
   },
   "peerDependencies": {
     "electron": ">=20"

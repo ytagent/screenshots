@@ -19,6 +19,9 @@ export default function App(): ReactElement {
   const [height, setHeight] = useState(window.innerHeight);
   const [display, setDisplay] = useState<Display | undefined>(undefined);
   const [lang, setLang] = useState<Lang | undefined>(undefined);
+  const [longScreenshotStatus, setLongScreenshotStatus] = useState<
+    string | undefined
+  >(undefined);
 
   const onSave = useCallback(
     async (blob: Blob | null, bounds: Bounds) => {
@@ -44,6 +47,23 @@ export default function App(): ReactElement {
     [display],
   );
 
+  const onLongScreenshot = useCallback(
+    (bounds: Bounds) => {
+      if (!display) {
+        return;
+      }
+      setLongScreenshotStatus(
+        '长截图模式即将开始。请在选区内滚动，按 Enter 完成，按 Esc 取消。',
+      );
+      window.screenshots.longScreenshotStart({
+        bounds,
+        display,
+        longScreenshot: true,
+      });
+    },
+    [display],
+  );
+
   useEffect(() => {
     const onSetLang = (lang: Lang) => {
       setLang(lang);
@@ -57,17 +77,29 @@ export default function App(): ReactElement {
     const onReset = () => {
       setUrl(undefined);
       setDisplay(undefined);
+      setLongScreenshotStatus(undefined);
       // 确保截图区域被重置
       requestAnimationFrame(() => window.screenshots.reset());
     };
 
+    const onLongScreenshotProgress = (progress: { message?: string }) => {
+      if (progress.message) {
+        setLongScreenshotStatus(progress.message);
+      }
+    };
+
     window.screenshots.on('setLang', onSetLang);
     window.screenshots.on('capture', onCapture);
+    window.screenshots.on('longScreenshot-progress', onLongScreenshotProgress);
     window.screenshots.on('reset', onReset);
     // 告诉主进程页面准备完成
     window.screenshots.ready();
     return () => {
       window.screenshots.off('capture', onCapture);
+      window.screenshots.off(
+        'longScreenshot-progress',
+        onLongScreenshotProgress,
+      );
       window.screenshots.off('setLang', onSetLang);
       window.screenshots.off('reset', onReset);
     };
@@ -95,7 +127,11 @@ export default function App(): ReactElement {
         onSave={onSave}
         onCancel={onCancel}
         onOk={onOk}
+        onLongScreenshot={onLongScreenshot}
       />
+      {longScreenshotStatus ? (
+        <div className="scrollshot-status">{longScreenshotStatus}</div>
+      ) : null}
     </div>
   );
 }
