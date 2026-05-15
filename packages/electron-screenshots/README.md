@@ -215,6 +215,8 @@ class Event {
 | afterSave     | 截图保存（取消保存）后的事件                                | `(event: Event, buffer: Buffer, data: ScreenshotsData, isSaved: boolean) => void` |
 | longScreenshot | 长截图完成事件                                             | `(event: Event, buffer: Buffer, data: ScreenshotsData, plan: StitchPlan) => void` |
 | longScreenshotFailed | 长截图失败事件                                      | `(event: Event, data: ScreenshotsData, message: string, warnings: string[], plan?: StitchPlan) => void` |
+| longScreenshotControllerShown | 长截图悬浮控制器显示事件                         | `(window: BrowserWindow, data: ScreenshotsData) => void`                          |
+| longScreenshotControllerFallbackShown | 长截图菜单栏控制兜底显示事件              | `(data: ScreenshotsData) => void`                                                 |
 | windowCreated | 截图窗口被创建后触发                                        | `($win: BrowserWindow) => void`                                                   |
 | windowClosed  | 截图窗口被关闭后触发，对`BrowserWindow` `closed` 事件的转发 | `($win: BrowserWindow) => void`                                                   |
 

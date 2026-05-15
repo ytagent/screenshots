@@ -1,4 +1,10 @@
-import { BrowserWindow, ipcMain, type IpcMainEvent } from 'electron';
+import {
+  BrowserWindow,
+  Menu,
+  ipcMain,
+  type IpcMainEvent,
+  type MenuItemConstructorOptions,
+} from 'electron';
 import type { Bounds, ScreenshotsData } from '../preload.js';
 
 export interface LongScreenshotProgress {
@@ -9,7 +15,7 @@ export interface LongScreenshotProgress {
 }
 
 export interface LongScreenshotControllerHandle {
-  readonly window: BrowserWindow;
+  readonly window?: BrowserWindow;
   update(progress: LongScreenshotProgress): void;
   destroy(): void;
 }
@@ -20,6 +26,7 @@ export interface LongScreenshotControllerOptions {
   cancel: () => void;
   logger?: (...args: unknown[]) => void;
   onShown?: (window: BrowserWindow) => void;
+  onFallbackShown?: () => void;
 }
 
 class ElectronLongScreenshotController
@@ -110,19 +117,109 @@ class ElectronLongScreenshotController
   }
 }
 
+class ElectronLongScreenshotMenuController
+  implements LongScreenshotControllerHandle
+{
+  private progress: LongScreenshotProgress | null = null;
+
+  private disposed = false;
+
+  private readonly previousMenu = Menu.getApplicationMenu();
+
+  public constructor(
+    private readonly onFinish: () => Promise<void>,
+    private readonly onCancel: () => void,
+    private readonly logger?: (...args: unknown[]) => void,
+  ) {
+    this.installMenu();
+  }
+
+  public update(progress: LongScreenshotProgress): void {
+    this.progress = progress;
+    this.installMenu();
+  }
+
+  public destroy(): void {
+    if (this.disposed) {
+      return;
+    }
+    this.disposed = true;
+    Menu.setApplicationMenu(this.previousMenu);
+  }
+
+  private installMenu(): void {
+    if (this.disposed) {
+      return;
+    }
+    Menu.setApplicationMenu(Menu.buildFromTemplate(this.getMenuTemplate()));
+  }
+
+  private getMenuTemplate(): MenuItemConstructorOptions[] {
+    const frameCount = this.progress?.frameCount ?? 0;
+    const state = this.progress?.state ?? 'capturing';
+    const message =
+      this.progress?.message ?? 'Long screenshot capture is active.';
+    return [
+      {
+        label: 'Long Screenshot',
+        submenu: [
+          {
+            label:
+              frameCount > 0
+                ? `Captured ${frameCount} frame${frameCount === 1 ? '' : 's'}`
+                : 'Preparing capture',
+            enabled: false,
+          },
+          {
+            label: truncateMenuLabel(`${state}: ${message}`),
+            enabled: false,
+          },
+          { type: 'separator' },
+          {
+            label: 'Finish Long Screenshot',
+            accelerator: 'Enter',
+            click: () => {
+              this.onFinish().catch((err) => {
+                this.logger?.(
+                  'SCREENSHOTS:longScreenshot menu finish error %o',
+                  err,
+                );
+              });
+            },
+          },
+          {
+            label: 'Cancel Long Screenshot',
+            accelerator: 'Esc',
+            click: () => {
+              this.onCancel();
+            },
+          },
+        ],
+      },
+    ];
+  }
+}
+
 export function createLongScreenshotController({
   data,
   finish,
   cancel,
   logger,
   onShown,
+  onFallbackShown,
 }: LongScreenshotControllerOptions): LongScreenshotControllerHandle | null {
   const bounds = getLongScreenshotControllerBounds(data);
   if (!bounds) {
     logger?.(
-      'SCREENSHOTS:longScreenshot controller skipped; no safe position outside capture bounds',
+      'SCREENSHOTS:longScreenshot controller using menu fallback; no safe position outside capture bounds',
     );
-    return null;
+    const fallback = new ElectronLongScreenshotMenuController(
+      finish,
+      cancel,
+      logger,
+    );
+    onFallbackShown?.();
+    return fallback;
   }
 
   const window = new BrowserWindow({
@@ -247,6 +344,13 @@ export function getLongScreenshotControllerBounds(
     };
   }
   return null;
+}
+
+function truncateMenuLabel(value: string): string {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  return normalized.length > 72
+    ? `${normalized.slice(0, 69).trimEnd()}...`
+    : normalized;
 }
 
 function getLongScreenshotControllerUrl(): string {

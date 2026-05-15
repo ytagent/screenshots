@@ -155,7 +155,7 @@ async function launchSelfInElectron() {
 
 async function runInElectron() {
   const electron = require('electron');
-  const { app, BrowserWindow, nativeImage, screen } = electron;
+  const { app, BrowserWindow, Menu, nativeImage, screen } = electron;
   const hardTimeout = setTimeout(() => {
     const error = new Error('Electron scrollshot smoke timed out');
     writeSmokeError(error);
@@ -194,6 +194,17 @@ async function runInElectron() {
     'scrollshot',
     'adapters.js',
   ));
+  const {
+    createLongScreenshotController,
+    getLongScreenshotControllerBounds,
+  } = require(join(
+    rootDir,
+    'packages',
+    'electron-screenshots',
+    'lib',
+    'scrollshot',
+    'controller.js',
+  ));
 
   app.commandLine.appendSwitch('force-device-scale-factor', '1');
   app.disableHardwareAcceleration();
@@ -201,6 +212,12 @@ async function runInElectron() {
   mkdirSync(outDir, { recursive: true });
 
   const display = screen.getPrimaryDisplay();
+  runControllerFallbackSmoke({
+    Menu,
+    display,
+    createLongScreenshotController,
+    getLongScreenshotControllerBounds,
+  });
   const x = display.bounds.x + 80;
   const y = display.bounds.y + 80;
   const width = 460;
@@ -399,6 +416,61 @@ async function runInElectron() {
   });
   app.quit();
   clearTimeout(hardTimeout);
+}
+
+function runControllerFallbackSmoke({
+  Menu,
+  display,
+  createLongScreenshotController,
+  getLongScreenshotControllerBounds,
+}) {
+  const controllerDisplay = {
+    id: display.id,
+    x: display.bounds.x,
+    y: display.bounds.y,
+    width: display.bounds.width,
+    height: display.bounds.height,
+    scaleFactor: display.scaleFactor,
+  };
+  const data = {
+    bounds: {
+      x: 0,
+      y: 0,
+      width: controllerDisplay.width,
+      height: controllerDisplay.height,
+    },
+    display: controllerDisplay,
+  };
+  if (getLongScreenshotControllerBounds(data) !== null) {
+    throw new Error('Full-screen controller bounds should use fallback');
+  }
+
+  const previousMenu = Menu.getApplicationMenu();
+  let fallbackShown = false;
+  const controller = createLongScreenshotController({
+    data,
+    finish: async () => undefined,
+    cancel: () => undefined,
+    onFallbackShown: () => {
+      fallbackShown = true;
+    },
+  });
+  if (!controller || controller.window || !fallbackShown) {
+    throw new Error('Long screenshot menu fallback was not created');
+  }
+  controller.update({
+    state: 'capturing',
+    frameCount: 3,
+    message: 'fallback smoke',
+  });
+  const menu = Menu.getApplicationMenu();
+  if (!menu?.items.some((item) => item.label === 'Long Screenshot')) {
+    throw new Error('Long screenshot menu fallback was not installed');
+  }
+  controller.destroy();
+  if (Menu.getApplicationMenu() !== previousMenu) {
+    throw new Error('Long screenshot menu fallback did not restore menu');
+  }
 }
 
 async function runAutomaticControlledSmoke({

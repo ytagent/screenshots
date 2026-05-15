@@ -5,7 +5,7 @@
 - Repository structure separates `scrollshot-core`, `scrollshot-session`, `electron-screenshots`, and `react-screenshots`.
 - The normal screenshot toolbar includes a long screenshot action after the user selects a region.
 - Manual-assisted region capture is wired through `electron-screenshots`, hides the overlay, samples the selected bounds, stitches frames, and emits the existing `ok` path.
-- Manual-assisted mode shows a small finish/cancel controller outside the selected capture rect when safe screen space is available, with Enter/Esc fallback.
+- Manual-assisted mode shows a small finish/cancel controller outside the selected capture rect when safe screen space is available, with app-menu and Enter/Esc fallbacks.
 - External automatic mode is available through `longScreenshotMode: "auto" | "manual" | "automatic"`. `auto` tries platform wheel scrolling then falls back to manual, while `automatic` fails clearly if the platform cannot move the selected target.
 - Windows has an external adapter that tries UI Automation `ScrollPattern` at the selected region center, then falls back to wheel input without DOM access.
 - The Electron smoke harness writes `artifacts/latest/electron-external-auto-smoke/` and enforces that external automatic mode produces a correct long image on Windows.
@@ -26,8 +26,8 @@
 
 - Windows external-window automatic scrolling still needs richer target diagnostics for cases where UI Automation `ScrollPattern` is unavailable and the adapter falls back to wheel input.
 - macOS external-window automatic scrolling still needs ScreenCaptureKit capture and Accessibility scrolling with explicit permission handling.
-- Full-screen or near-full-screen manual selections should get an additional tray/menu-bar fallback because the non-captured controller is intentionally skipped when no safe off-rect position exists.
+- A tray icon fallback is still optional future UX for environments where the app-menu fallback is not reachable during full-screen capture.
 
 ## Exact Continuation Prompt
 
-Continue the scrollshot release goal from `docs/scrollshot-release-audit.md`: implement a macOS Accessibility/ScreenCaptureKit validation path and add a full-screen tray/menu fallback without weakening `pnpm eval:scrollshot` or `pnpm smoke:scrollshot`.
+Continue the scrollshot release goal from `docs/scrollshot-release-audit.md`: implement a macOS Accessibility/ScreenCaptureKit validation path and add richer target diagnostics without weakening `pnpm eval:scrollshot` or `pnpm smoke:scrollshot`.

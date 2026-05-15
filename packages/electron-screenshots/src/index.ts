@@ -438,6 +438,9 @@ export default class Screenshots extends Events {
       onShown: (window) => {
         this.emit('longScreenshotControllerShown', window, data);
       },
+      onFallbackShown: () => {
+        this.emit('longScreenshotControllerFallbackShown', data);
+      },
     });
   }
 

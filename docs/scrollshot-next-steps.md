@@ -8,7 +8,7 @@
    - keep the implemented wheel input path as fallback;
    - report platform limitation when neither path is available.
 2. Improve manual UX:
-   - add a tray/menu-bar fallback for full-screen selections where no non-captured controller can fit;
+   - consider a tray icon fallback for environments where the app-menu fallback is not reachable;
    - surface low-confidence warnings before failing.
 3. Add real macOS external-window automatic scrolling:
    - ScreenCaptureKit capture adapter;
