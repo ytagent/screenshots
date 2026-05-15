@@ -113,7 +113,7 @@ Fixtures currently include:
 
 Windows is verified in CI for the deterministic core eval, the real Electron toolbar/manual flow, the controlled Electron automatic flow, and the external automatic OS-level flow. The Windows adapter attempts UI Automation `ScrollPattern` first and falls back to wheel input when the selected target does not expose a scroll pattern. The external-auto artifact records the selected screen point, display scale, inspected UI Automation ancestors, the selected target, and the final scroll methods used.
 
-macOS is verified in CI for the deterministic core eval, the real Electron toolbar/manual flow, the controlled Electron automatic flow, and the external automatic OS-level flow against an external Electron target. The external-auto smoke runs a ScreenCaptureKit `SCShareableContent` probe and attempts the product external-auto flow. The passing hosted-runner artifact records ScreenCaptureKit success, `AXIsProcessTrusted=true`, `macos-cgevent-scroll`, actual/expected `320x2640`, and score `0.9988121147133096`. Earlier hosted-runner limits such as a `UserNotificationCenter` system dialog intercepting or overlapping the selected target are still recorded as explicit `macos-hosted-runner-*` environment blocks instead of fake passes.
+macOS is verified in CI for the deterministic core eval, the real Electron toolbar/manual flow, the controlled Electron automatic flow, and the external automatic OS-level flow against an OS-level external target. The external-auto smoke runs a ScreenCaptureKit `SCShareableContent` probe and attempts the product external-auto flow. The passing hosted-runner artifact records ScreenCaptureKit success, `AXIsProcessTrusted=true`, `macos-cgevent-scroll`, actual/expected `320x2640`, and score `0.9988124489379085`. Earlier hosted-runner limits such as a `UserNotificationCenter` system dialog intercepting or overlapping the selected target are still recorded as explicit `macos-hosted-runner-*` environment blocks instead of fake passes.
 
 Reference docs used while designing the adapters:
 
@@ -126,9 +126,9 @@ Reference docs used while designing the adapters:
 - Apple `AXUIElementCopyElementAtPosition`: https://developer.apple.com/documentation/applicationservices/1462077-axuielementcopyelementatposition
 - Apple `AXUIElementPerformAction`: https://developer.apple.com/documentation/applicationservices/1462085-axuielementperformaction
 
-## Known Gaps
+## Residual Risks
 
-- Automatic OS-level external-window scrolling remains platform-dependent: Windows and the macOS hosted Electron target are verified, while Linux still requires runtime tooling and native third-party macOS targets still need broader signed/permissioned desktop coverage.
+- Automatic OS-level external-window scrolling remains platform-dependent: Windows and the macOS hosted external target are verified, while Linux still requires runtime tooling and native third-party macOS targets are future hardening coverage.
 - Windows UI Automation `ScrollPattern` may not be available for every selected target; the verified fallback is wheel input at the selected region center, and diagnostics are emitted for both attempts.
 - macOS ScreenCaptureKit probing, Accessibility preflight, Accessibility action scrolling, and CoreGraphics scroll posting are implemented. Real-world behavior still depends on Screen Recording/Accessibility permissions and whether system prompts overlap or intercept the selected region.
 - Linux external automatic mode requires `xdotool`; CI records this path as skipped unless that runtime is available.

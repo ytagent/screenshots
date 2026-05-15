@@ -1,16 +1,16 @@
 # Scrollshot Next Steps
 
-## Highest Priority
+## Post-release Hardening
 
-1. Broaden macOS external-window automatic scrolling verification beyond the hosted Electron smoke target:
+1. Broaden macOS external-window automatic scrolling verification beyond the hosted Electron target:
    - grant Accessibility input control to the host app or signed test helper;
    - verify the trusted Accessibility action or CoreGraphics scroll event moves native third-party scroll views, not only the CI Electron fixture;
    - keep the ScreenCaptureKit `SCShareableContent` probe in the smoke artifact;
    - require a correct stitched output when Accessibility permission is available and no system prompt overlaps the selected region;
    - keep hosted-runner skips only for explicit environment blocks such as missing Accessibility trust, system dialog interception, or accepted Accessibility/CoreGraphics scroll attempts that do not move the target.
-2. Improve manual UX:
+2. Improve manual UX further:
    - consider a tray icon fallback for environments where the app-menu fallback is not reachable;
-   - surface low-confidence warnings before failing.
+   - add more predictive low-confidence warnings before final stitching when enough evidence is available.
 3. Improve external-window automatic diagnostics further:
    - locate and name the selected target window where platform APIs expose it;
    - keep Windows UI Automation `ScrollPattern` before wheel fallback;
