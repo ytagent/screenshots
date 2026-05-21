@@ -1,4 +1,9 @@
-import { assertImageShape, copyRows, createPixelImage } from "./image";
+import {
+  assertImageShape,
+  copyRows,
+  createPixelImage,
+  sampledImageDifference,
+} from "./image";
 import { estimateVerticalOverlap } from "./overlap";
 import { detectStickyHeaderRows } from "./sticky";
 import type {
@@ -46,19 +51,6 @@ function validateFrames(frames: ScrollshotFrame[]): void {
   }
 }
 
-function buildSamples(length: number, requested: number): number[] {
-  const count = Math.max(1, Math.min(length, Math.floor(requested)));
-  if (count === length) {
-    return Array.from({ length }, (_, index) => index);
-  }
-  if (count === 1) {
-    return [Math.floor(length / 2)];
-  }
-  return Array.from({ length: count }, (_, index) =>
-    Math.min(length - 1, Math.round((index * (length - 1)) / (count - 1))),
-  );
-}
-
 function normalizedSameFrameScore(
   previous: ScrollshotFrame,
   next: ScrollshotFrame,
@@ -66,49 +58,20 @@ function normalizedSameFrameScore(
   ignoreTopRows: number,
 ): number {
   const width = previous.image.width;
-  const height = previous.image.height;
-  const startX = Math.max(0, Math.floor(options.ignoreLeftColumns ?? 2));
-  const endX = Math.max(
-    startX + 1,
-    Math.min(
-      width,
-      Math.floor(
-        width -
-          (options.ignoreRightColumns ??
-            Math.min(28, Math.max(8, width * 0.06))),
-      ),
-    ),
-  );
-  const sampleColumns = options.sampleColumns ?? 48;
-  const sampleRows = options.sampleRows ?? 180;
-  const contentRows = Math.max(1, height - ignoreTopRows);
-  const columns = buildSamples(endX - startX, sampleColumns).map(
-    (x) => x + startX,
-  );
-  const rows = buildSamples(contentRows, sampleRows).map((y) => y + ignoreTopRows);
-  let error = 0;
-
-  for (const y of rows) {
-    for (const x of columns) {
-      const previousOffset = (y * width + x) * 4;
-      const nextOffset = (y * width + x) * 4;
-      error += Math.abs(
-        (previous.image.data[previousOffset] ?? 0) -
-          (next.image.data[nextOffset] ?? 0),
-      );
-      error += Math.abs(
-        (previous.image.data[previousOffset + 1] ?? 0) -
-          (next.image.data[nextOffset + 1] ?? 0),
-      );
-      error += Math.abs(
-        (previous.image.data[previousOffset + 2] ?? 0) -
-          (next.image.data[nextOffset + 2] ?? 0),
-      );
-    }
-  }
-
-  return error / (rows.length * columns.length * 3 * 255);
+  return sampledImageDifference(previous.image, next.image, {
+    sampleColumns: options.sampleColumns ?? 48,
+    sampleRows: options.sampleRows ?? 180,
+    ignoreLeftColumns: options.ignoreLeftColumns ?? 2,
+    ignoreRightColumns:
+      options.ignoreRightColumns ?? Math.min(28, Math.max(8, width * 0.06)),
+    ignoreTopRows,
+  });
 }
+
+// 正向 score 低于此阈值时认为匹配已经足够干净，跳过反向匹配以省 CPU。
+const CLEAN_FORWARD_SCORE = 0.01;
+// 反向 score 比正向 score 低于这个比例时判定为反向滚动 / 无重叠伪匹配。
+const REVERSE_BETTER_RATIO = 0.85;
 
 export function stitchFrames(
   frames: ScrollshotFrame[],
@@ -188,6 +151,15 @@ export function stitchFrames(
       ...options,
       ignoreTopRows: stickyHeaderRows,
     });
+    // 反向匹配让 stitch 的 CPU 翻倍。仅在正向匹配不够干净时才跑，
+    // 避免典型干净滚动场景下渲染进程卡死。
+    const reverseMatch =
+      match.score < CLEAN_FORWARD_SCORE
+        ? null
+        : estimateVerticalOverlap(frame.image, lastAccepted.image, {
+            ...options,
+            ignoreTopRows: stickyHeaderRows,
+          });
     const frameWarnings: string[] = [];
     const isDuplicate =
       match.deltaY <= duplicateDeltaThreshold &&
@@ -203,19 +175,28 @@ export function stitchFrames(
         deltaY: match.deltaY,
         overlapRows: match.overlapRows,
         confidence: match.confidence,
+        score: match.score,
+        reverseScore: reverseMatch?.score,
         discardedDuplicate: true,
         warnings: ["duplicate frame discarded"],
       });
       continue;
     }
 
+    // 任何 deltaY 大于"近似重复"阈值但置信度低的匹配都是不可信的，
+    // 直接保留只会把已显示的内容再粘一遍，造成视觉重复。
     const isTransient =
       transientFrameDeltaThreshold > 0 &&
       match.deltaY > duplicateDeltaThreshold &&
-      match.deltaY <= transientFrameDeltaThreshold &&
       match.confidence < minConfidence;
+    // 反向更优 = 用户向上滚 / 帧间无真实重叠。reverseMatch 为 null 时
+    // 表示正向已经很干净，自然不会走这一支。
+    const isReverseScroll =
+      reverseMatch !== null &&
+      match.deltaY > duplicateDeltaThreshold &&
+      reverseMatch.score < match.score * REVERSE_BETTER_RATIO;
 
-    if (isTransient) {
+    if (isTransient || isReverseScroll) {
       discardedTransientFrames.push(index);
       planFrames.push({
         inputIndex: index,
@@ -225,8 +206,14 @@ export function stitchFrames(
         deltaY: match.deltaY,
         overlapRows: match.overlapRows,
         confidence: match.confidence,
+        score: match.score,
+        reverseScore: reverseMatch?.score,
         discardedTransient: true,
-        warnings: ["transient low-confidence frame discarded"],
+        warnings: [
+          isReverseScroll
+            ? "reverse-scroll or no-overlap frame discarded"
+            : "transient low-confidence frame discarded",
+        ],
       });
       continue;
     }
@@ -236,7 +223,7 @@ export function stitchFrames(
         `low overlap confidence ${match.confidence.toFixed(4)} for frame ${index}`,
       );
     }
-    if (match.overlapRows < Math.max(12, firstFrame.image.height * 0.12)) {
+    if (match.overlapRows < Math.max(12, firstFrame.image.height * 0.05)) {
       frameWarnings.push(
         `insufficient overlap ${match.overlapRows}px for frame ${index}`,
       );
@@ -263,6 +250,8 @@ export function stitchFrames(
       deltaY: match.deltaY,
       overlapRows: match.overlapRows,
       confidence: match.confidence,
+      score: match.score,
+      reverseScore: reverseMatch?.score,
       warnings: frameWarnings,
     });
     outputHeight += match.deltaY;
@@ -312,8 +301,11 @@ export function stitchFrames(
     plan.deviceScaleFactor = firstFrame.deviceScaleFactor;
   }
 
-  if (warnings.length > 0) {
-    plan.failureReason = warnings.join("; ");
+  // 只把"实质性失败"标为 failure。warnings 只是个别帧的瑕疵提示，
+  // 不该让整次拼接作废。这里的失败定义是：除了第一帧，没有任何后续帧
+  // 被接受 → 整段没有有效滚动内容，输出图等于第一帧。
+  if (plan.acceptedFrameCount <= 1) {
+    plan.failureReason = "no scrollable content captured";
   }
 
   return { image: output, plan };

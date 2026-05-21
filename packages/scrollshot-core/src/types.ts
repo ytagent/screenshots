@@ -61,6 +61,8 @@ export interface StitchPlanFrame {
   deltaY: number;
   overlapRows: number;
   confidence: number;
+  score?: number | undefined;
+  reverseScore?: number | undefined;
   discardedDuplicate?: boolean;
   discardedTransient?: boolean;
   warnings: string[];

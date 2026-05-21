@@ -17,6 +17,7 @@ import fs from 'fs-extra';
 import {
   compareImages,
   type PixelImage,
+  sampledImageDifference,
   stitchFrames,
   type ScrollshotFrame,
 } from 'scrollshot-core';
@@ -29,6 +30,10 @@ import {
   type LongScreenshotControllerHandle,
   type LongScreenshotProgress,
 } from './scrollshot/controller.js';
+import {
+  createLongScreenshotIndicator,
+  type LongScreenshotIndicatorHandle,
+} from './scrollshot/indicator.js';
 import {
   createPlatformScrollAdapter,
   type PlatformScrollResult,
@@ -133,6 +138,8 @@ export default class Screenshots extends Events {
 
   private longScreenshotController: LongScreenshotControllerHandle | null = null;
 
+  private longScreenshotIndicator: LongScreenshotIndicatorHandle | null = null;
+
   private isReady = new Promise<void>((resolve) => {
     ipcMain.once('SCREENSHOTS:ready', () => {
       this.logger('SCREENSHOTS:ready');
@@ -150,6 +157,8 @@ export default class Screenshots extends Events {
     this.$view.webContents.loadURL(
       `file://${require.resolve('react-screenshots/dist/electron.html')}`,
     );
+    // 提前加载原生模块，避免第一次按快捷键时触发 100-500ms 的冷启动
+    void import('node-screenshots').catch(() => {});
     if (opts?.lang) {
       this.setLang(opts.lang);
     }
@@ -319,11 +328,26 @@ export default class Screenshots extends Events {
   }
 
   private async capture(display: Display): Promise<string> {
-    const image = await this.captureNativeImage(display);
-    return image.toDataURL();
+    const result = await this.captureRaw(display);
+    if (result.kind === 'buffer') {
+      return `data:image/png;base64,${result.buffer.toString('base64')}`;
+    }
+    return result.image.toDataURL();
   }
 
   private async captureNativeImage(display: Display): Promise<NativeImage> {
+    const result = await this.captureRaw(display);
+    if (result.kind === 'buffer') {
+      return nativeImage.createFromBuffer(result.buffer);
+    }
+    return result.image;
+  }
+
+  private async captureRaw(
+    display: Display,
+  ): Promise<
+    { kind: 'buffer'; buffer: Buffer } | { kind: 'nativeImage'; image: NativeImage }
+  > {
     this.logger('SCREENSHOTS:capture');
 
     const forceDesktopCapturer =
@@ -367,7 +391,7 @@ export default class Screenshots extends Events {
           'node-screenshots capture timed out',
         );
         const buffer = await image.toPng(true);
-        return nativeImage.createFromBuffer(buffer);
+        return { kind: 'buffer', buffer };
       } catch (err) {
         this.logger('SCREENSHOTS:capture Monitor capture() error %o', err);
       }
@@ -408,8 +432,9 @@ export default class Screenshots extends Events {
       throw new Error("Can't find screen source");
     }
 
-    return source.thumbnail;
+    return { kind: 'nativeImage', image: source.thumbnail };
   }
+
 
   private sendLongScreenshotProgress(progress: LongScreenshotProgress) {
     this.$view.webContents.send('SCREENSHOTS:longScreenshot-progress', progress);
@@ -421,6 +446,11 @@ export default class Screenshots extends Events {
     this.longScreenshotController = null;
     if (controller) {
       controller.destroy();
+    }
+    const indicator = this.longScreenshotIndicator;
+    this.longScreenshotIndicator = null;
+    if (indicator) {
+      indicator.destroy();
     }
   }
 
@@ -441,10 +471,8 @@ export default class Screenshots extends Events {
       onShown: (window) => {
         this.emit('longScreenshotControllerShown', window, data);
       },
-      onFallbackShown: () => {
-        this.emit('longScreenshotControllerFallbackShown', data);
-      },
     });
+    this.longScreenshotIndicator = createLongScreenshotIndicator(data);
   }
 
   private updateLongScreenshotController(
@@ -552,8 +580,19 @@ export default class Screenshots extends Events {
           data.bounds,
           data.display,
         );
+        const pixelImage = nativeImageToPixelImage(cropped.image);
+        const lastFrame = frames[frames.length - 1];
+        // 没有滚动 = 内容几乎不变 = 不入数组。避免长时间静止时
+        // 把同一张帧反复存进内存导致 OOM。
+        if (
+          !force &&
+          lastFrame &&
+          sampledImageDifference(lastFrame.image, pixelImage) < 0.002
+        ) {
+          return;
+        }
         frames.push({
-          image: nativeImageToPixelImage(cropped.image),
+          image: pixelImage,
           index: frames.length,
           timestamp: Date.now(),
           deviceScaleFactor: cropped.scaleFactor,
@@ -562,7 +601,7 @@ export default class Screenshots extends Events {
         this.sendLongScreenshotProgress({
           state: 'capturing',
           frameCount: frames.length,
-          message: `长截图采集中：已捕获 ${frames.length} 帧。滚动完成后按 Enter，按 Esc 取消。`,
+          message: `已捕获 ${frames.length} 帧 · Enter 完成 · Esc 取消`,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -587,9 +626,6 @@ export default class Screenshots extends Events {
       }
       frameTimer = setInterval(() => {
         captureFrame();
-        if (frames.length >= 80) {
-          finish();
-        }
       }, 300);
     };
 
@@ -622,14 +658,16 @@ export default class Screenshots extends Events {
         });
         const result = stitchFrames(frames, {
           stickyHeaderRows: 'auto',
-          minOverlapRatio: 0.16,
-          maxOverlapRatio: 0.96,
-          minScrollDelta: 3,
+          minOverlapRatio: 0.08,
+          maxOverlapRatio: 0.995,
+          minScrollDelta: 1,
+          duplicateDeltaThreshold: 8,
+          duplicateConfidenceThreshold: 0.9,
           transientFrameDeltaThreshold: Math.max(
             24,
             Math.round(data.bounds.height * 0.14),
           ),
-          minConfidence: 0.68,
+          minConfidence: 0.78,
           sampleColumns: 64,
           sampleRows: 220,
         });
@@ -814,8 +852,8 @@ export default class Screenshots extends Events {
       frameCount: 0,
       message:
         mode === 'manual'
-          ? '长截图模式即将开始。请在选区内滚动，按 Enter 完成，按 Esc 取消。'
-          : '长截图模式即将开始。将优先尝试自动滚动，失败后可手动滚动。',
+          ? '长截图准备中，请在选区内滚动'
+          : '长截图准备中，将尝试自动滚动',
     });
 
     await delay(900);

@@ -16,17 +16,40 @@ body,
 
 .scrollshot-status {
   position: fixed;
-  top: 18px;
+  top: 16px;
   left: 50%;
-  max-width: min(720px, calc(100vw - 48px));
-  padding: 10px 14px;
-  border: 1px solid rgb(55 65 81 / 35%);
-  border-radius: 6px;
-  background: rgb(17 24 39 / 92%);
-  color: #fff;
-  font-size: 13px;
-  line-height: 1.5;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(420px, calc(100vw - 48px));
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgb(255 255 255 / 6%);
+  border-radius: 8px;
+  background: rgb(17 24 39 / 95%);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 32%);
+  color: #f9fafb;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transform: translateX(-50%);
   pointer-events: none;
+}
+
+.scrollshot-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #39f;
+  box-shadow: 0 0 8px rgb(51 153 255 / 55%);
+  flex-shrink: 0;
+  animation: scrollshot-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes scrollshot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
 }

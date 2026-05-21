@@ -136,3 +136,42 @@ export function paintRect(
     }
   }
 }
+
+export interface SampledDifferenceOptions {
+  sampleColumns?: number;
+  sampleRows?: number;
+  ignoreLeftColumns?: number;
+  ignoreRightColumns?: number;
+  ignoreTopRows?: number;
+}
+
+export function sampledImageDifference(
+  a: PixelImage,
+  b: PixelImage,
+  options: SampledDifferenceOptions = {},
+): number {
+  if (a.width !== b.width || a.height !== b.height) {
+    return 1;
+  }
+  const sampleColumns = options.sampleColumns ?? 32;
+  const sampleRows = options.sampleRows ?? 64;
+  const ignoreLeft = Math.max(0, Math.floor(options.ignoreLeftColumns ?? 0));
+  const ignoreRight = Math.max(0, Math.floor(options.ignoreRightColumns ?? 0));
+  const ignoreTop = Math.max(0, Math.floor(options.ignoreTopRows ?? 0));
+  const usableWidth = Math.max(1, a.width - ignoreLeft - ignoreRight);
+  const usableHeight = Math.max(1, a.height - ignoreTop);
+  const colStep = Math.max(1, Math.floor(usableWidth / sampleColumns));
+  const rowStep = Math.max(1, Math.floor(usableHeight / sampleRows));
+  let total = 0;
+  let count = 0;
+  for (let y = ignoreTop; y < a.height; y += rowStep) {
+    for (let x = ignoreLeft; x < a.width - ignoreRight; x += colStep) {
+      const offset = (y * a.width + x) * 4;
+      total += Math.abs((a.data[offset] ?? 0) - (b.data[offset] ?? 0));
+      total += Math.abs((a.data[offset + 1] ?? 0) - (b.data[offset + 1] ?? 0));
+      total += Math.abs((a.data[offset + 2] ?? 0) - (b.data[offset + 2] ?? 0));
+      count += 1;
+    }
+  }
+  return count === 0 ? 1 : total / (count * 3 * 255);
+}

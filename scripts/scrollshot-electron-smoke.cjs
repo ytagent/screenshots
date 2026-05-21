@@ -155,7 +155,7 @@ async function launchSelfInElectron() {
 
 async function runInElectron() {
   const electron = require('electron');
-  const { app, BrowserWindow, Menu, nativeImage, screen } = electron;
+  const { app, BrowserWindow, nativeImage, screen } = electron;
   const hardTimeout = setTimeout(() => {
     const error = new Error('Electron scrollshot smoke timed out');
     writeSmokeError(error);
@@ -212,8 +212,7 @@ async function runInElectron() {
   mkdirSync(outDir, { recursive: true });
 
   const display = screen.getPrimaryDisplay();
-  runControllerFallbackSmoke({
-    Menu,
+  await runFullscreenControllerSmoke({
     display,
     createLongScreenshotController,
     getLongScreenshotControllerBounds,
@@ -433,8 +432,7 @@ async function runInElectron() {
   clearTimeout(hardTimeout);
 }
 
-function runControllerFallbackSmoke({
-  Menu,
+async function runFullscreenControllerSmoke({
   display,
   createLongScreenshotController,
   getLongScreenshotControllerBounds,
@@ -456,35 +454,44 @@ function runControllerFallbackSmoke({
     },
     display: controllerDisplay,
   };
-  if (getLongScreenshotControllerBounds(data) !== null) {
-    throw new Error('Full-screen controller bounds should use fallback');
+  const bounds = getLongScreenshotControllerBounds(data);
+  if (!bounds) {
+    throw new Error('Full-screen controller bounds should be available');
   }
 
-  const previousMenu = Menu.getApplicationMenu();
-  let fallbackShown = false;
   const controller = createLongScreenshotController({
     data,
     finish: async () => undefined,
     cancel: () => undefined,
-    onFallbackShown: () => {
-      fallbackShown = true;
-    },
   });
-  if (!controller || controller.window || !fallbackShown) {
-    throw new Error('Long screenshot menu fallback was not created');
+  if (!controller?.window) {
+    throw new Error('Long screenshot controller window was not created');
+  }
+  if (
+    (process.platform === 'darwin' || process.platform === 'win32') &&
+    !controller.window.isContentProtected()
+  ) {
+    throw new Error('Long screenshot controller should be content protected');
   }
   controller.update({
     state: 'capturing',
     frameCount: 3,
-    message: 'fallback smoke',
+    message: 'fullscreen controller smoke',
   });
-  const menu = Menu.getApplicationMenu();
-  if (!menu?.items.some((item) => item.label === 'Long Screenshot')) {
-    throw new Error('Long screenshot menu fallback was not installed');
+  if (!controller.window.isVisible()) {
+    await new Promise((resolveShown, rejectShown) => {
+      const timeout = setTimeout(() => {
+        rejectShown(new Error('Long screenshot controller window did not show'));
+      }, 5000);
+      controller.window.once('show', () => {
+        clearTimeout(timeout);
+        resolveShown();
+      });
+    });
   }
   controller.destroy();
-  if (Menu.getApplicationMenu() !== previousMenu) {
-    throw new Error('Long screenshot menu fallback did not restore menu');
+  if (!controller.window.isDestroyed()) {
+    throw new Error('Long screenshot controller window was not destroyed');
   }
 }
 

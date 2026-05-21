@@ -52,9 +52,7 @@ export default function App(): ReactElement {
       if (!display) {
         return;
       }
-      setLongScreenshotStatus(
-        '长截图模式即将开始。请在选区内滚动，按 Enter 完成，按 Esc 取消。',
-      );
+      setLongScreenshotStatus('长截图准备中…');
       window.screenshots.longScreenshotStart({
         bounds,
         display,
